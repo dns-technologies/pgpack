@@ -1,5 +1,11 @@
 # Version History
 
+## 0.3.2.3
+
+* Update depends pgcopylib==0.2.3.3
+* Update depends light_compressor==0.0.2.2
+* Change url link
+
 ## 0.3.2.2
 
 * Update depends pgcopylib==0.2.3.2

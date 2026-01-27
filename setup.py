@@ -13,7 +13,7 @@ with open(file="README.md", encoding="utf-8") as f:
 
 setup(
     name="pgpack",
-    version="0.3.2.2",
+    version="0.3.2.3",
     packages=find_packages(),
     author="0xMihalich",
     author_email="bayanmobile87@gmail.com",
@@ -21,7 +21,7 @@ setup(
         "PGCopy dump packed into LZ4, ZSTD or uncompressed "
         "with meta data information packed into zlib."
     ),
-    url="https://github.com/0xMihalich/pgpack",
+    url="https://0xmihalich.github.io/dbhose_airflow/base_modules/pgpack/index.html",
     long_description=long_description,
     long_description_content_type="text/markdown",
     zip_safe=False,
