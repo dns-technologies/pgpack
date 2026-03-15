@@ -1,1 +1,0 @@
-HEADER = b"PGPACK\n\x00"

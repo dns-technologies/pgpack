@@ -19,7 +19,10 @@ from pgcopylib import (
     PGCopyReader,
     PGOid,
 )
-from polars import DataFrame as PlFrame
+from polars import (
+    DataFrame as PlFrame,
+    LazyFrame as LfFrame,
+)
 
 from .common import (
     HEADER,
@@ -29,6 +32,13 @@ from .common import (
     PGPackMetadataCrcError,
     PGParam,
 )
+
+
+S3_SIGNATURE = 0x70677061636b5f73, 0x335f6f626a656374
+ISLAZY = {
+    False: PlFrame,
+    True: LfFrame,
+}
 
 
 class PGPackReader:
@@ -43,6 +53,7 @@ class PGPackReader:
     pgcopy_data_length: int
     compression_method: CompressionMethod
     compression_stream: BufferedReader
+    s3_file: bool
     pgcopy_start: int
     pgcopy: PGCopyReader
     _str: Optional[str]
@@ -89,7 +100,24 @@ class PGPackReader:
             self.fileobj,
             self.compression_method,
         )
+        self.s3_file = (
+            self.pgcopy_compressed_length,
+            self.pgcopy_data_length,
+        ) == S3_SIGNATURE
         self.pgcopy_start = self.fileobj.tell()
+
+        if self.s3_file:
+            if self.fileobj.seekable():
+                self.fileobj.seek(-16, 2)
+                (
+                    self.pgcopy_compressed_length,
+                    self.pgcopy_data_length,
+                ) = unpack("!2Q", self.fileobj.read(16))
+                self.fileobj.seek(self.pgcopy_start)
+            else:
+                self.pgcopy_compressed_length = 0
+                self.pgcopy_data_length = -1
+
         self.pgcopy = PGCopyReader(
             self.compression_stream,
             self.pgtypes,
@@ -158,10 +186,10 @@ Compression rate: {round(
             self.pgcopy.postgres_dtype,
         ))
 
-    def to_polars(self) -> PlFrame:
+    def to_polars(self, is_lazy: bool = False) -> PlFrame | LfFrame:
         """Convert to polars.DataFrame."""
 
-        return PlFrame(
+        return ISLAZY[is_lazy](
             data=self.pgcopy.to_rows(),
             schema=self.columns,
             infer_schema_length=None,

@@ -2,13 +2,13 @@ class PGPackError(Exception):
     """Base PGPack error."""
 
 
-class PGPackHeaderError(ValueError):
+class PGPackHeaderError(PGPackError, ValueError):
     """Error header signature."""
 
 
-class PGPackMetadataCrcError(ValueError):
+class PGPackMetadataCrcError(PGPackError, ValueError):
     """Error metadata crc32."""
 
 
-class PGPackModeError(ValueError):
+class PGPackModeError(PGPackError, ValueError):
     """Error fileobject mode."""

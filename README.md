@@ -18,19 +18,19 @@ Storage format for PGCopy dump packed into LZ4, ZSTD or uncompressed with meta d
 ### From pip
 
 ```bash
-pip install pgpack
+pip install pgpack -U --index-url https://dns-technologies.github.io/dbhose-dev-pip/simple/
 ```
 
 ### From local directory
 
 ```bash
-pip install .
+pip install . --extra-index-url https://dns-technologies.github.io/dbhose-dev-pip/simple/
 ```
 
 ### From git
 
 ```bash
-pip install git+https://github.com/0xMihalich/pgpack
+pip install git+https://github.com/dns-technologies/pgpack --extra-index-url https://dns-technologies.github.io/dbhose-dev-pip/simple/
 ```
 
 ## Metadata format

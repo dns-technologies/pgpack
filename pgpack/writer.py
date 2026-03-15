@@ -13,24 +13,31 @@ from zlib import (
 )
 
 from light_compressor import (
+    CompressionLevel,
     CompressionMethod,
+    GZIPCompressor,
     LZ4Compressor,
+    SNAPPYCompressor,
     ZSTDCompressor,
 )
 from pandas import DataFrame as PdFrame
-from polars import DataFrame as PlFrame
+from polars import (
+    DataFrame as PlFrame,
+    LazyFrame as LfFrame,
+)
 from pgcopylib import (
     PGCopyWriter,
     PGOid,
 )
 
 from .common import (
-    HEADER,
-    metadata_from_frame,
-    metadata_reader,
     PGPackMetadataCrcError,
     PGPackModeError,
     PGParam,
+    metadata_from_frame,
+    metadata_reader,
+    HEADER,
+    S3_FILE_HEADER,
 )
 
 
@@ -48,6 +55,8 @@ class PGPackWriter:
     pgcopy_compressed_length: int
     pgcopy_data_length: int
     compression_method: CompressionMethod
+    compression_level: int
+    s3_file: bool
     pgcopy_start: int
     pgcopy: PGCopyWriter | None
     _str: str | None
@@ -57,6 +66,8 @@ class PGPackWriter:
         fileobj: BufferedWriter,
         metadata: bytes | None = None,
         compression_method: CompressionMethod = CompressionMethod.ZSTD,
+        compression_level: int = CompressionLevel.DEFAULT_COMPRESSION,
+        s3_file: bool = False,
     ) -> None:
         """Class initialization."""
 
@@ -68,6 +79,8 @@ class PGPackWriter:
         self.pgcopy_compressed_length = 0
         self.pgcopy_data_length = -1
         self.compression_method = compression_method
+        self.compression_level = compression_level
+        self.s3_file = s3_file
         self.pgcopy_start = self.fileobj.tell()
         self.pgcopy = None
         self._str = None
@@ -151,13 +164,16 @@ Compression rate: {round(
         if not self.metadata:
             self.metadata = metadata_from_frame(data_frame)
 
-        return self.from_rows(iter(data_frame.values))
+        return self.from_rows(data_frame.itertuples(index=False))
 
     def from_polars(
         self,
-        data_frame: PlFrame,
+        data_frame: PlFrame | LfFrame,
     ) -> str:
         """Convert polars.DataFrame to pgpack format."""
+
+        if data_frame.__class__ is LfFrame:
+            data_frame = data_frame.collect(engine="streaming")
 
         if not self.metadata:
             self.metadata = metadata_from_frame(data_frame)
@@ -171,11 +187,15 @@ Compression rate: {round(
         """Convert pgcopy bytes to pgpack format."""
 
         if self.compression_method is CompressionMethod.NONE:
-            compressor = None
+            _compressor = None
+        elif self.compression_method is CompressionMethod.GZIP:
+            _compressor = GZIPCompressor
         elif self.compression_method is CompressionMethod.LZ4:
-            compressor = LZ4Compressor()
+            _compressor = LZ4Compressor
+        elif self.compression_method is CompressionMethod.SNAPPY:
+            _compressor = SNAPPYCompressor
         elif self.compression_method is CompressionMethod.ZSTD:
-            compressor = ZSTDCompressor()
+            _compressor = ZSTDCompressor
         else:
             raise ValueError(
                 f"Unsupported compression method {self.compression_method}"
@@ -202,12 +222,15 @@ Compression rate: {round(
             metadata_length,
             metadata_zlib,
             compression_method,
-            bytes(16),
+            S3_FILE_HEADER if self.s3_file else bytes(16),
         ):
             self.pgcopy_start += self.fileobj.write(data)
 
-        if compressor:
+        if _compressor:
+            compressor = _compressor(self.compression_level)
             bytes_data = compressor.send_chunks(bytes_data)
+        else:
+            compressor = None
 
         for data in bytes_data:
             self.fileobj.write(data)
@@ -219,7 +242,9 @@ Compression rate: {round(
         else:
             self.pgcopy_data_length = self.pgcopy_compressed_length
 
-        self.fileobj.seek(self.pgcopy_start - 16)
+        if not self.s3_file:
+            self.fileobj.seek(self.pgcopy_start - 16)
+
         self.fileobj.write(pack(
             "!2Q",
             self.pgcopy_compressed_length,

@@ -1,5 +1,18 @@
 # Version History
 
+## 0.3.3.dev0
+
+* Developer release (not public to pip)
+* Add compression_level parameter for PGPackWriter
+* Add s3_file parameter for PGPackReader and PGPackWriter
+* Add polars.LazyFrame support
+* Add Gzip and Snappy compression support
+* Speed-up PGPackWriter.from_pandas() method
+* Refactor errors
+* Update depends pgcopylib==0.2.4.dev0
+* Update depends light_compressor==0.1.0.dev2
+* Update README.md
+
 ## 0.3.2.3
 
 * Update depends pgcopylib==0.2.3.3
