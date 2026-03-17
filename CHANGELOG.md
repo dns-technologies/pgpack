@@ -1,5 +1,16 @@
 # Version History
 
+## 0.3.3.dev1
+
+* Developer release (not public to pip)
+* Update depends light_compressor==0.1.0.dev3
+* Update string representation for s3file object
+* Fix docstring
+* Refactor PGPackWriter.from_bytes() method
+* Add PGPackReader.schema_overrides attribute for polars.DataFrame/LazyFrame
+* Fix PGPackReader.to_polars() for dumps with nested objects
+* Update README.md
+
 ## 0.3.3.dev0
 
 * Developer release (not public to pip)

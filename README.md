@@ -1,6 +1,6 @@
 # PGPack format
 
-Storage format for PGCopy dump packed into LZ4, ZSTD or uncompressed with meta data information packed into zlib
+Storage format for PGCopy dump packed into GZIP, LZ4, SNAPPY, ZSTD or uncompressed with meta data information packed into zlib
 
 ## PGPack structure
 
@@ -57,7 +57,9 @@ list[
 ## Compression methods
 
 - NONE (value = 0x02) PGCopy dump without compression
+- GZIP (value = 0x99) PGCopy dump with lz4 compression
 - LZ4 (value = 0x82) PGCopy dump with lz4 compression
+- SNAPPY (value = 0x9f) PGCopy dump with lz4 compression
 - ZSTD (value = 0x90) PGCopy dump with zstd compression
 
 ### Get ENUM for set compression method
@@ -66,7 +68,9 @@ list[
 from pgpack import CompressionMethod
 
 compression_method = CompressionMethod.NONE  # no compression
+compression_method = CompressionMethod.GZIP  # gzip compression
 compression_method = CompressionMethod.LZ4  # lz4 compression
+compression_method = CompressionMethod.SNAPPY  # snappy compression
 compression_method = CompressionMethod.ZSTD  # zstd compression (default)
 ```
 
@@ -86,11 +90,13 @@ Methods and attributes
 - pgcopy_data_length - integer unpacked pgcopy data length
 - compression_method - CompressionMethod object
 - compression_stream - BufferedReader object for decompress data
+- s3_file - bool for detect file mode (dump or s3file)
 - pgcopy_start - integer offset for start pgcopy compressed data
 - pgcopy - PGCopyReader object
+- schema_overrides - dictionary data for polars.DataFrame/LazyFrame constructor
 - to_rows() - Method for reading uncompressed PGCopy data as generator python objects
 - to_pandas() - Method for reading uncompressed PGCopy data as pandas.DataFrame
-- to_polars() - Method for reading uncompressed PGCopy data as polars.DataFrame
+- to_polars() - Method for reading uncompressed PGCopy data as polars.DataFrame/LazyFrame
 - to_bytes() - Method for reading uncompressed PGCopy data as generator bytes
 
 ## Class PGPackWriter
@@ -100,6 +106,8 @@ Initialization parameters
 - fileobj - BufferedWriter object (file, BytesIO e t.c)
 - metadata - metadata in bytes (default is None)
 - compression_method - CompressionMethod object (default is CompressionMethod.ZSTD)
+- compression_level - int value for define compression level (default is 3)
+- s3_file - bool for select write mode between dump and s3file (default is False)
 
 Methods and attributes
 
@@ -112,7 +120,7 @@ Methods and attributes
 - pgcopy - PGCopyWriter object
 - from_rows(dtype_data) - Write PGPack file from python objects. Parameter: dtype_data as python iterable object
 - from_pandas(data_frame) - Write PGPack file from pandas.DataFrame. Parameter: data_frame as pandas.DataFrame
-- from_polars(data_frame) - Write PGPack file from polars.DataFrame. Parameter: data_frame as polars.DataFrame
+- from_polars(data_frame) - Write PGPack file from polars.DataFrame/LazyFrame. Parameter: data_frame as polars.DataFrame/LazyFrame
 - from_bytes(bytes_data) - Write PGPack file from bytes. Parameter: bytes_data as bytes iterable object
 
 ## Errors

@@ -22,6 +22,7 @@ from pgcopylib import (
 from polars import (
     DataFrame as PlFrame,
     LazyFrame as LfFrame,
+    Object,
 )
 
 from .common import (
@@ -56,6 +57,7 @@ class PGPackReader:
     s3_file: bool
     pgcopy_start: int
     pgcopy: PGCopyReader
+    schema_overrides: dict[str, Object]
     _str: Optional[str]
 
     def __init__(
@@ -122,6 +124,19 @@ class PGPackReader:
             self.compression_stream,
             self.pgtypes,
         )
+        self.schema_overrides = {
+            column: Object
+            for column, pgtype in zip(self.columns, self.pgtypes)
+            if pgtype in (
+                PGOid._uuid,
+                PGOid._json,
+                PGOid._jsonb,
+                PGOid._inet,
+                PGOid._cidr,
+                PGOid._tsquery,
+                PGOid._tsvector,
+            )
+        }
         self._str = None
 
     def __repr__(self) -> str:
@@ -139,6 +154,7 @@ class PGPackReader:
             return f" {text: <15} "
 
         if not self._str:
+            dump_type = "s3file" if self.s3_file else "dump"
             empty_line = (
                 "├─────────────────┼─────────────────┤"
             )
@@ -146,7 +162,7 @@ class PGPackReader:
                 "└─────────────────┴─────────────────┘"
             )
             _str = [
-                "<PostgreSQL/GreenPlum compressed dump>",
+                f"<PostgreSQL/GreenPlum compressed {dump_type}>",
                 "┌─────────────────┬─────────────────┐",
                 "│ Column Name     │ PostgreSQL Type │",
                 "╞═════════════════╪═════════════════╡",
@@ -192,6 +208,7 @@ Compression rate: {round(
         return ISLAZY[is_lazy](
             data=self.pgcopy.to_rows(),
             schema=self.columns,
+            schema_overrides=self.schema_overrides,
             infer_schema_length=None,
         )
 

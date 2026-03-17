@@ -17,7 +17,7 @@ from light_compressor import (
     CompressionMethod,
     GZIPCompressor,
     LZ4Compressor,
-    SNAPPYCompressor,
+    SNAPCompressor,
     ZSTDCompressor,
 )
 from pandas import DataFrame as PdFrame
@@ -42,6 +42,9 @@ from .common import (
 
 
 NAN2NONE = {float("nan"): None}
+CompressorType = (
+    GZIPCompressor | LZ4Compressor | SNAPCompressor | ZSTDCompressor
+)
 
 
 class PGPackWriter:
@@ -66,7 +69,7 @@ class PGPackWriter:
         fileobj: BufferedWriter,
         metadata: bytes | None = None,
         compression_method: CompressionMethod = CompressionMethod.ZSTD,
-        compression_level: int = CompressionLevel.DEFAULT_COMPRESSION,
+        compression_level: int = CompressionLevel.ZSTD_DEFAULT,
         s3_file: bool = False,
     ) -> None:
         """Class initialization."""
@@ -91,7 +94,7 @@ class PGPackWriter:
         return self.__str__()
 
     def __str__(self) -> str:
-        """String representation of PGPackReader."""
+        """String representation of PGPackWriter."""
 
         def to_col(text: str) -> str:
             """Format string element."""
@@ -100,6 +103,7 @@ class PGPackWriter:
             return f" {text: <15} "
 
         if not self._str:
+            dump_type = "s3file" if self.s3_file else "dump"
             empty_line = (
                 "├─────────────────┼─────────────────┤"
             )
@@ -107,7 +111,7 @@ class PGPackWriter:
                 "└─────────────────┴─────────────────┘"
             )
             _str = [
-                "<PostgreSQL/GreenPlum compressed dump>",
+                f"<PostgreSQL/GreenPlum compressed {dump_type}>",
                 "┌─────────────────┬─────────────────┐",
                 "│ Column Name     │ PostgreSQL Type │",
                 "╞═════════════════╪═════════════════╡",
@@ -188,14 +192,8 @@ Compression rate: {round(
 
         if self.compression_method is CompressionMethod.NONE:
             _compressor = None
-        elif self.compression_method is CompressionMethod.GZIP:
-            _compressor = GZIPCompressor
-        elif self.compression_method is CompressionMethod.LZ4:
-            _compressor = LZ4Compressor
-        elif self.compression_method is CompressionMethod.SNAPPY:
-            _compressor = SNAPPYCompressor
-        elif self.compression_method is CompressionMethod.ZSTD:
-            _compressor = ZSTDCompressor
+        elif isinstance(self.compression_method, CompressionMethod):
+            _compressor = self.compression_method.compressor
         else:
             raise ValueError(
                 f"Unsupported compression method {self.compression_method}"
@@ -227,7 +225,7 @@ Compression rate: {round(
             self.pgcopy_start += self.fileobj.write(data)
 
         if _compressor:
-            compressor = _compressor(self.compression_level)
+            compressor: CompressorType = _compressor(self.compression_level)
             bytes_data = compressor.send_chunks(bytes_data)
         else:
             compressor = None
