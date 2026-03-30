@@ -1,5 +1,12 @@
 # Version History
 
+## 0.3.3.dev3
+
+* Developer release (not public to pip)
+* Refactor project code
+* Change repository structure
+* Update pyproject.toml
+
 ## 0.3.3.dev2
 
 * Developer release (not public to pip)
@@ -25,7 +32,6 @@
 * Update project structure and dependencies
 * Update depends pgcopylib==0.2.4.dev1
 * Update depends light-compressor==0.1.1.dev1
-* Refactor project code
 
 ## 0.3.3.dev1
 

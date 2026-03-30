@@ -1,3 +1,39 @@
 [build-system]
 requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "pgpack"
+version = "0.3.3.dev3"
+description = "PGCopy dump packed into GZIP, LZ4, SNAPPY, ZSTD or uncompressed with meta data information packed into zlib."
+readme = "README.md"
+requires-python = ">=3.10"
+license = {file = "LICENSE"}
+authors = [
+    {name = "0xMihalich", email = "bayanmobile87@gmail.com"},
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+]
+dependencies = [
+    "pandas>=2.1.0",
+    "polars>=0.20.31",
+    "pgcopylib==0.2.4.dev1",
+    "light-compressor==0.1.1.dev1",
+]
+
+[project.urls]
+Homepage = "https://github.com/dns-technologies/pgpack"
+Documentation = "https://dns-technologies.github.io/dbhose_airflow/classes/pgpack/index.html"
+Repository = "https://github.com/dns-technologies/pgpack"
+Changelog = "https://github.com/dns-technologies/pgpack/blob/main/CHANGELOG.md"
+
+[tool.setuptools]
+packages = {find = {where = ["src"]}}
+package-dir = {"" = "src"}

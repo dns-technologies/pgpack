@@ -13,13 +13,14 @@ with open(file="README.md", encoding="utf-8") as f:
 
 setup(
     name="pgpack",
-    version="0.3.3.dev2",
+    version="0.3.3.dev3",
+    package_dir={"": "src"},
     packages=find_packages(),
     author="0xMihalich",
     author_email="bayanmobile87@gmail.com",
     description=(
-        "PGCopy dump packed into LZ4, ZSTD or uncompressed "
-        "with meta data information packed into zlib."
+        "PGCopy dump packed into GZIP, LZ4, SNAPPY, ZSTD or "
+        "uncompressed with meta data information packed into zlib."
     ),
     url="https://dns-technologies.github.io/dbhose_airflow/base_modules/pgpack/index.html",
     long_description=long_description,
