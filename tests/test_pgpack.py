@@ -470,7 +470,7 @@ class TestPGPackEdgeCases:
             def read(self, size):
                 if self.pos >= len(self.data):
                     return b""
-                result = self.data[self.pos : self.pos + size]
+                result = self.data[self.pos: self.pos + size]
                 self.pos += len(result)
                 return result
 
