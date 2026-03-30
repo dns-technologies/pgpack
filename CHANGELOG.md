@@ -1,5 +1,30 @@
 # Version History
 
+## 0.3.3.dev2
+
+* Developer release (not public to pip)
+* Add new errors
+* Add imports from pgcopylib into pgpack.`__init__`.py
+* Add pytest coverage
+* Add comprehensive tests for all 32 PostgreSQL data types including arrays and edge cases
+* Add support for empty DataFrame (auto-detect types as TEXT)
+* Add error handling for empty files in PGPackReader
+* Change S3File signature to b"S3\x00Stream\x00Object"
+* Decompose project
+* Fix detect_oid to return default TEXT type for empty or None values
+* Fix PGPackReader.to_rows() to handle empty data without pgcopy object
+* Fix PGPackWriter metadata generation for pandas and polars DataFrames
+* Improve all compression methods support (GZIP, LZ4, SNAPPY, ZSTD, NONE)
+* Improve S3 mode tail handling and validation
+* Improve tell() method to return correct position after reading
+* Improve close() method to properly close underlying file objects
+* Add test_all_types_roundtrip covering all PostgreSQL data types
+* Add test_unseekable_stream for socket-like streams
+* Add test_s3_mode_tail_presence for S3 format validation
+* Update `__repr__` methods for better debugging output
+* Update project structure and dependencies
+* Refactor project code
+
 ## 0.3.3.dev1
 
 * Developer release (not public to pip)

@@ -1,12 +1,7 @@
-from io import (
-    BufferedReader,
-    BufferedWriter,
-)
+from collections.abc import Iterable
+from io import BufferedWriter
 from struct import pack
-from typing import (
-    Any,
-    Iterable,
-)
+from typing import Any
 from zlib import (
     crc32,
     compress,
@@ -15,10 +10,7 @@ from zlib import (
 from light_compressor import (
     CompressionLevel,
     CompressionMethod,
-    GZIPCompressor,
-    LZ4Compressor,
-    SNAPCompressor,
-    ZSTDCompressor,
+    CompressorType,
 )
 from pandas import DataFrame as PdFrame
 from polars import (
@@ -31,42 +23,36 @@ from pgcopylib import (
 )
 
 from .common import (
-    PGPackMetadataCrcError,
-    PGPackModeError,
+    Error,
+    Fmt,
+    Signature,
+    Size,
     PGParam,
     metadata_from_frame,
     metadata_reader,
-    HEADER,
-    S3_FILE_HEADER,
-)
-
-
-NAN2NONE = {float("nan"): None}
-CompressorType = (
-    GZIPCompressor | LZ4Compressor | SNAPCompressor | ZSTDCompressor
+    pgpack_repr,
 )
 
 
 class PGPackWriter:
     """Class for write PGPack format."""
 
-    fileobj: BufferedReader
+    fileobj: BufferedWriter | None
     metadata: bytes | None
     columns: list[str]
     pgtypes: list[PGOid]
     pgparam: list[PGParam]
-    pgcopy_compressed_length: int
-    pgcopy_data_length: int
+    compressed_length: int
+    data_length: int
     compression_method: CompressionMethod
     compression_level: int
     s3_file: bool
-    pgcopy_start: int
-    pgcopy: PGCopyWriter | None
-    _str: str | None
+    pgcopy_start: int | None = None
+    pgcopy: PGCopyWriter | None = None
 
     def __init__(
         self,
-        fileobj: BufferedWriter,
+        fileobj: BufferedWriter | None = None,
         metadata: bytes | None = None,
         compression_method: CompressionMethod = CompressionMethod.ZSTD,
         compression_level: int = CompressionLevel.ZSTD_DEFAULT,
@@ -76,68 +62,28 @@ class PGPackWriter:
 
         self.fileobj = fileobj
         self.metadata = metadata
-        self.columns = []
-        self.pgtypes = []
-        self.pgparam = []
-        self.pgcopy_compressed_length = 0
-        self.pgcopy_data_length = -1
         self.compression_method = compression_method
         self.compression_level = compression_level
         self.s3_file = s3_file
-        self.pgcopy_start = self.fileobj.tell()
-        self.pgcopy = None
-        self._str = None
+        self.columns = []
+        self.pgtypes = []
+        self.pgparam = []
+        self.compressed_length = Size.SEEK_SET
+        self.data_length = -Size.SEEK_CUR
 
-    def __repr__(self) -> str:
-        """String representation in interpreter."""
+        if self.fileobj:
+            self.pgcopy_start = self.fileobj.tell()
 
-        return self.__str__()
+        if self.metadata:
+            self.init_pgcopy(self.metadata)
 
-    def __str__(self) -> str:
-        """String representation of PGPackWriter."""
+    def init_pgcopy(
+        self,
+        metadata: bytes,
+    ) -> None:
+        """Initialize pgcopy from metadata."""
 
-        def to_col(text: str) -> str:
-            """Format string element."""
-
-            text = text[:14] + "…" if len(text) > 15 else text
-            return f" {text: <15} "
-
-        if not self._str:
-            dump_type = "s3file" if self.s3_file else "dump"
-            empty_line = (
-                "├─────────────────┼─────────────────┤"
-            )
-            end_line = (
-                "└─────────────────┴─────────────────┘"
-            )
-            _str = [
-                f"<PostgreSQL/GreenPlum compressed {dump_type}>",
-                "┌─────────────────┬─────────────────┐",
-                "│ Column Name     │ PostgreSQL Type │",
-                "╞═════════════════╪═════════════════╡",
-            ]
-
-            for column, pgtype in zip(self.columns, self.pgtypes):
-                _str.append(
-                    f"│{to_col(column)}│{to_col(pgtype.name)}│",
-                )
-                _str.append(empty_line)
-
-            _str[-1] = end_line
-            self._str = "\n".join(_str) + f"""
-Total columns: {len(self.columns)}
-Compression method: {self.compression_method.name}
-Unpacked size: {self.pgcopy_data_length} bytes
-Compressed size: {self.pgcopy_compressed_length} bytes
-Compression rate: {round(
-    (self.pgcopy_compressed_length / self.pgcopy_data_length) * 100, 2
-)} %
-"""
-        return self._str
-
-    def __init_copy(self) -> None:
-        """Initialize pgcopy from self.metadata."""
-
+        self.metadata = metadata
         (
             self.columns,
             self.pgtypes,
@@ -148,21 +94,21 @@ Compression rate: {round(
     def from_rows(
         self,
         dtype_values: Iterable[Any],
-    ) -> str:
+    ) -> int:
         """Convert python rows to pgpack format."""
 
         if not self.metadata:
-            raise PGPackMetadataCrcError("Metadata error.")
+            raise Error.PGPackMetadataCrcError("Metadata error.")
 
         if not self.pgcopy:
-            self.__init_copy()
+            self.init_pgcopy(self.metadata)
 
         return self.from_bytes(self.pgcopy.from_rows(dtype_values))
 
     def from_pandas(
         self,
         data_frame: PdFrame,
-    ) -> str:
+    ) -> int:
         """Convert pandas.DataFrame to pgpack format."""
 
         if not self.metadata:
@@ -173,7 +119,7 @@ Compression rate: {round(
     def from_polars(
         self,
         data_frame: PlFrame | LfFrame,
-    ) -> str:
+    ) -> int:
         """Convert polars.DataFrame to pgpack format."""
 
         if data_frame.__class__ is LfFrame:
@@ -187,7 +133,7 @@ Compression rate: {round(
     def from_bytes(
         self,
         bytes_data: Iterable[bytes],
-    ) -> str:
+    ) -> int:
         """Convert pgcopy bytes to pgpack format."""
 
         if self.compression_method is CompressionMethod.NONE:
@@ -195,32 +141,33 @@ Compression rate: {round(
         elif isinstance(self.compression_method, CompressionMethod):
             _compressor = self.compression_method.compressor
         else:
-            raise ValueError(
+            raise Error.PGPackTypeError(
                 f"Unsupported compression method {self.compression_method}"
             )
 
         if not self.fileobj:
-            raise ValueError("Fileobject not define.")
+            raise Error.PGPackNotDefineError("Fileobject not define.")
         if not self.fileobj.writable():
-            raise PGPackModeError("Fileobject don't support write.")
+            raise Error.PGPackModeError("Fileobject don't support write.")
         if not self.metadata:
-            raise PGPackMetadataCrcError("Metadata error.")
+            raise Error.PGPackMetadataCrcError("Metadata error.")
 
         if not self.pgcopy:
-            self.__init_copy()
+            self.init_pgcopy(self.metadata)
 
+        self.pgcopy_start = self.fileobj.tell()
         metadata_zlib = compress(self.metadata)
-        metadata_crc = pack("!L", crc32(metadata_zlib))
-        metadata_length = pack("!L", len(metadata_zlib))
-        compression_method = pack("!B", self.compression_method.value)
+        metadata_crc = pack(Fmt.U_LONG, crc32(metadata_zlib))
+        metadata_length = pack(Fmt.U_LONG, len(metadata_zlib))
+        compression_method = pack(Fmt.U_CHAR, self.compression_method.value)
 
         for data in (
-            HEADER,
+            Signature.HEADER,
             metadata_crc,
             metadata_length,
             metadata_zlib,
             compression_method,
-            S3_FILE_HEADER if self.s3_file else bytes(16),
+            Signature.S3_FILE if self.s3_file else bytes(Size.S3_TAIL),
         ):
             self.pgcopy_start += self.fileobj.write(data)
 
@@ -233,24 +180,23 @@ Compression rate: {round(
         for data in bytes_data:
             self.fileobj.write(data)
 
-        self.pgcopy_compressed_length = self.fileobj.tell() - self.pgcopy_start
+        self.compressed_length = self.fileobj.tell() - self.pgcopy_start
 
         if compressor:
-            self.pgcopy_data_length = compressor.decompressed_size
+            self.data_length = compressor.decompressed_size
         else:
-            self.pgcopy_data_length = self.pgcopy_compressed_length
+            self.data_length = self.compressed_length
 
         if not self.s3_file:
-            self.fileobj.seek(self.pgcopy_start - 16)
+            self.fileobj.seek(self.pgcopy_start - Size.S3_TAIL)
 
         self.fileobj.write(pack(
-            "!2Q",
-            self.pgcopy_compressed_length,
-            self.pgcopy_data_length,
+            Fmt.COMPRESS_LENGTH,
+            self.compressed_length,
+            self.data_length,
         ))
         self.fileobj.flush()
-        self._str = None
-        return self.__str__()
+        return self.tell()
 
     def tell(self) -> int:
         """Return current position."""
@@ -263,5 +209,19 @@ Compression rate: {round(
     def close(self) -> None:
         """Close file object."""
 
-        self.pgcopy.close()
-        self.fileobj.close()
+        if self.fileobj:
+            if hasattr(self.fileobj, "close"):
+                self.fileobj.close()
+
+    def __repr__(self) -> str:
+        """String representation of PGPackWriter."""
+
+        return pgpack_repr(
+            self.columns,
+            self.pgtypes,
+            self.pgparam,
+            self.s3_file,
+            self.compressed_length,
+            self.data_length,
+            self.compression_method,
+        )

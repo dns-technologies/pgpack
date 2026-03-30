@@ -12,3 +12,11 @@ class PGPackMetadataCrcError(PGPackError, ValueError):
 
 class PGPackModeError(PGPackError, ValueError):
     """Error fileobject mode."""
+
+
+class PGPackNotDefineError(PGPackError, ValueError):
+    """Fileobject not define."""
+
+
+class PGPackTypeError(PGPackError, TypeError):
+    """PGPack type error."""

@@ -1,10 +1,7 @@
 from collections.abc import Generator
 from io import BufferedReader
 from struct import unpack
-from typing import (
-    Any,
-    Optional,
-)
+from typing import Any
 from zlib import (
     crc32,
     decompress,
@@ -12,6 +9,7 @@ from zlib import (
 
 from light_compressor import (
     CompressionMethod,
+    LimitedReader,
     define_reader,
 )
 from pandas import DataFrame as PdFrame
@@ -26,16 +24,17 @@ from polars import (
 )
 
 from .common import (
-    HEADER,
+    Error,
+    Fmt,
+    Signature,
+    Size,
+    PGParam,
     metadata_reader,
     pandas_astype,
-    PGPackHeaderError,
-    PGPackMetadataCrcError,
-    PGParam,
+    pgpack_repr,
 )
 
 
-S3_SIGNATURE = 0x70677061636b5f73, 0x335f6f626a656374
 ISLAZY = {
     False: PlFrame,
     True: LfFrame,
@@ -50,15 +49,14 @@ class PGPackReader:
     columns: list[str]
     pgtypes: list[PGOid]
     pgparam: list[PGParam]
-    pgcopy_compressed_length: int
-    pgcopy_data_length: int
+    compressed_length: int
+    data_length: int
     compression_method: CompressionMethod
     compression_stream: BufferedReader
     s3_file: bool
     pgcopy_start: int
-    pgcopy: PGCopyReader
+    pgcopy: PGCopyReader | None
     schema_overrides: dict[str, Object]
-    _str: Optional[str]
 
     def __init__(
         self,
@@ -67,20 +65,19 @@ class PGPackReader:
         """Class initialization."""
 
         self.fileobj = fileobj
+        header = self.fileobj.read(Size.HEADER_LENS)
 
-        header = self.fileobj.read(8)
-
-        if header != HEADER:
-            raise PGPackHeaderError()
+        if header != Signature.HEADER:
+            raise Error.PGPackHeaderError()
 
         metadata_crc, metadata_length = unpack(
-            "!2L",
-            self.fileobj.read(8),
+            Fmt.METADATA_CRC_LENGTH,
+            self.fileobj.read(Size.METADATA_PROMPT),
         )
         metadata_zlib = self.fileobj.read(metadata_length)
 
         if crc32(metadata_zlib) != metadata_crc:
-            raise PGPackMetadataCrcError()
+            raise Error.PGPackMetadataCrcError()
 
         self.metadata = decompress(metadata_zlib)
         (
@@ -90,40 +87,44 @@ class PGPackReader:
         ) = metadata_reader(self.metadata)
         (
             compression_method,
-            self.pgcopy_compressed_length,
-            self.pgcopy_data_length,
+            self.compressed_length,
+            self.data_length,
         ) = unpack(
-            "!B2Q",
-            self.fileobj.read(17),
+            Fmt.COMPRESS_METHOD_LENGTH,
+            self.fileobj.read(Size.PGDATA_PROMPT),
         )
-
         self.compression_method = CompressionMethod(compression_method)
         self.compression_stream = define_reader(
             self.fileobj,
             self.compression_method,
         )
         self.s3_file = (
-            self.pgcopy_compressed_length,
-            self.pgcopy_data_length,
-        ) == S3_SIGNATURE
+            self.compressed_length,
+            self.data_length,
+        ) == Signature.S3_FILE_INTEGERS
         self.pgcopy_start = self.fileobj.tell()
 
         if self.s3_file:
-            if self.fileobj.seekable():
-                self.fileobj.seek(-16, 2)
-                (
-                    self.pgcopy_compressed_length,
-                    self.pgcopy_data_length,
-                ) = unpack("!2Q", self.fileobj.read(16))
-                self.fileobj.seek(self.pgcopy_start)
-            else:
-                self.pgcopy_compressed_length = 0
-                self.pgcopy_data_length = -1
+            self.fileobj.seek(-Size.S3_TAIL, Size.SEEK_END)
+            limit = self.fileobj.tell()
+            (
+                self.compressed_length,
+                self.data_length,
+            ) = unpack(
+                Fmt.COMPRESS_LENGTH,
+                self.fileobj.read(Size.S3_TAIL)
+            )
+            self.fileobj.seek(self.pgcopy_start)
+            self.fileobj = LimitedReader(self.fileobj, limit)
 
-        self.pgcopy = PGCopyReader(
-            self.compression_stream,
-            self.pgtypes,
-        )
+        try:
+            self.pgcopy = PGCopyReader(
+                self.compression_stream,
+                self.pgtypes,
+            )
+        except IndexError:
+            self.pgcopy = None
+
         self.schema_overrides = {
             column: Object
             for column, pgtype in zip(self.columns, self.pgtypes)
@@ -139,55 +140,17 @@ class PGPackReader:
         }
         self._str = None
 
-    def __repr__(self) -> str:
-        """String representation in interpreter."""
+    @property
+    def dtypes(self) -> list[str]:
+        """Get column data types."""
 
-        return self.__str__()
-
-    def __str__(self) -> str:
-        """String representation of PGPackReader."""
-
-        def to_col(text: str) -> str:
-            """Format string element."""
-
-            text = text[:14] + "…" if len(text) > 15 else text
-            return f" {text: <15} "
-
-        if not self._str:
-            dump_type = "s3file" if self.s3_file else "dump"
-            empty_line = (
-                "├─────────────────┼─────────────────┤"
-            )
-            end_line = (
-                "└─────────────────┴─────────────────┘"
-            )
-            _str = [
-                f"<PostgreSQL/GreenPlum compressed {dump_type}>",
-                "┌─────────────────┬─────────────────┐",
-                "│ Column Name     │ PostgreSQL Type │",
-                "╞═════════════════╪═════════════════╡",
-            ]
-
-            for column, pgtype in zip(self.columns, self.pgtypes):
-                _str.append(
-                    f"│{to_col(column)}│{to_col(pgtype.name)}│",
-                )
-                _str.append(empty_line)
-
-            _str[-1] = end_line
-            self._str = "\n".join(_str) + f"""
-Total columns: {len(self.columns)}
-Compression method: {self.compression_method.name}
-Unpacked size: {self.pgcopy_data_length} bytes
-Compressed size: {self.pgcopy_compressed_length} bytes
-Compression rate: {round(
-    (self.pgcopy_compressed_length / self.pgcopy_data_length) * 100, 2
-)} %
-"""
-        return self._str
+        return [pgtype.name for pgtype in self.pgtypes]
 
     def to_rows(self) -> Generator[list[Any], None, None]:
         """Convert to python objects."""
+
+        if not self.pgcopy:
+            return []
 
         return self.pgcopy.to_rows()
 
@@ -195,18 +158,18 @@ Compression rate: {round(
         """Convert to pandas.DataFrame."""
 
         return PdFrame(
-            data=self.pgcopy.to_rows(),
+            data=self.to_rows(),
             columns=self.columns,
         ).astype(pandas_astype(
             self.columns,
-            self.pgcopy.postgres_dtype,
+            self.pgcopy.postgres_dtype if self.pgcopy else [],
         ))
 
     def to_polars(self, is_lazy: bool = False) -> PlFrame | LfFrame:
         """Convert to polars.DataFrame."""
 
         return ISLAZY[is_lazy](
-            data=self.pgcopy.to_rows(),
+            data=self.to_rows(),
             schema=self.columns,
             schema_overrides=self.schema_overrides,
             infer_schema_length=None,
@@ -216,20 +179,11 @@ Compression rate: {round(
         """Get raw unpacked pgcopy data."""
 
         if self.compression_method is CompressionMethod.NONE:
-            self.fileobj.seek(self.pgcopy_start)
+            self.compression_stream.seek(self.pgcopy_start)
         else:
-            self.compression_stream.seek(0)
+            self.compression_stream.seek(Size.SEEK_SET)
 
-        chunk_size = 65536
-        read_size = 0
-
-        while 1:
-            chunk = self.compression_stream.read(chunk_size)
-            read_size += len(chunk)
-
-            if not chunk:
-                break
-
+        while chunk := self.compression_stream.read(Size.CHUNK_SIZE):
             yield chunk
 
     def tell(self) -> int:
@@ -240,5 +194,21 @@ Compression rate: {round(
     def close(self) -> None:
         """Close file object."""
 
-        self.pgcopy.close()
-        self.fileobj.close()
+        if hasattr(self.fileobj, "close"):
+            self.fileobj.close()
+
+    def __repr__(self) -> str:
+        """String representation of PGPackReader."""
+
+        if not self._str:
+            self._str = pgpack_repr(
+                self.columns,
+                self.pgtypes,
+                self.pgparam,
+                self.s3_file,
+                self.compressed_length,
+                self.data_length,
+                self.compression_method,
+            )
+
+        return self._str

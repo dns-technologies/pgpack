@@ -15,7 +15,14 @@ from typing import Any
 from types import NoneType
 from uuid import UUID
 
-from pandas import Timestamp
+from pandas import (
+    Series as PdSeries,
+    Timestamp,
+)
+from polars import (
+    List,
+    Series as PlSeries,
+)
 from numpy import (
     float64,
     int64,
@@ -55,13 +62,20 @@ def detect_oid(
     """Associate python type with postgres type."""
 
     for value in data_values:
-        if isinstance(value, list | tuple):
+        if isinstance(value, PdSeries | PlSeries | List | list | tuple):
             pg_type = detect_oid(value, True, nested + 1)
+
             if pg_type:
                 return pg_type
+
             continue
+
         if not isinstance(value, NoneType):
-            pg_oid: tuple[int] = AssociatePyType[value.__class__]
+            pg_oid: tuple[int] = AssociatePyType.get(value.__class__, str)
+
             if is_array:
                 return pg_oid[1], *pg_oid[2:], nested
+
             return pg_oid[0], *pg_oid[2:], nested
+
+    return AssociatePyType[str]
