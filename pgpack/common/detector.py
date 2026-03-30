@@ -16,6 +16,7 @@ from types import NoneType
 from uuid import UUID
 
 from pandas import (
+    NA,
     Series as PdSeries,
     Timestamp,
 )
@@ -51,6 +52,7 @@ AssociatePyType: dict[Any, tuple[int, ...]] = {
     str: (25, 1009, -1, 0),
     str_: (25, 1009, -1, 0),
     time: (1083, 1183, 8, 0),
+    NA: (25, 1009, -1, 0),
 }
 
 
