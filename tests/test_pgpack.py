@@ -433,7 +433,7 @@ class TestPGPackEdgeCases:
         # Check None values are preserved
         assert df_result["int_col"].isna().iloc[1]  # noqa: S101
         assert df_result["float_col"].isna().iloc[1]  # noqa: S101
-        # assert df_result["str_col"].isna().iloc[1]  # noqa: S101
+        assert df_result["str_col"].isna().iloc[1]  # noqa: S101
         reader.close()
 
     def test_large_dataframe(self):
