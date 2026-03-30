@@ -23,6 +23,8 @@
 * Add test_s3_mode_tail_presence for S3 format validation
 * Update `__repr__` methods for better debugging output
 * Update project structure and dependencies
+* Update depends pgcopylib==0.2.4.dev1
+* Update depends light-compressor==0.1.1.dev1
 * Refactor project code
 
 ## 0.3.3.dev1
@@ -46,13 +48,13 @@
 * Speed-up PGPackWriter.from_pandas() method
 * Refactor errors
 * Update depends pgcopylib==0.2.4.dev0
-* Update depends light_compressor==0.1.0.dev2
+* Update depends light-compressor==0.1.0.dev2
 * Update README.md
 
 ## 0.3.2.3
 
 * Update depends pgcopylib==0.2.3.3
-* Update depends light_compressor==0.0.2.2
+* Update depends light-compressor==0.0.2.2
 * Change url link
 
 ## 0.3.2.2
