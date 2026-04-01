@@ -1,5 +1,16 @@
 # Version History
 
+## 0.3.3.dev4
+
+* Developer release (not public to pip)
+* Refactor project code
+* Move pgcopylib into pgpack. Now it is a one library
+* Delete depends pgcopylib
+* Add depends python-dateutil>=2.8.0
+* Decomposite PGPackWriter.from_bytes() method
+* Improve docstrings
+* Update README.md
+
 ## 0.3.3.dev3
 
 * Developer release (not public to pip)

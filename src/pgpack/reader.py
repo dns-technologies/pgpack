@@ -13,10 +13,6 @@ from light_compressor import (
     define_reader,
 )
 from pandas import DataFrame as PdFrame
-from pgcopylib import (
-    PGCopyReader,
-    PGOid,
-)
 from polars import (
     DataFrame as PlFrame,
     LazyFrame as LfFrame,
@@ -32,6 +28,10 @@ from .common import (
     metadata_reader,
     pandas_astype,
     pgpack_repr,
+)
+from .pgcopylib import (
+    PGCopyReader,
+    PGOid,
 )
 
 

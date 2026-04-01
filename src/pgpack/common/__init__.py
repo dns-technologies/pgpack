@@ -1,3 +1,6 @@
+"""PGPack common classes, functions and modules."""
+
+
 from . import (
     errors as Error,
     signatures as Signature,

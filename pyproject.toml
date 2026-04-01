@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools"]
+requires = ["setuptools", "wheel", "Cython>=0.29.33"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "pgpack"
-version = "0.3.3.dev3"
+version = "0.3.3.dev4"
 description = "PGCopy dump packed into GZIP, LZ4, SNAPPY, ZSTD or uncompressed with meta data information packed into zlib."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -24,7 +24,7 @@ classifiers = [
 dependencies = [
     "pandas>=2.1.0",
     "polars>=0.20.31",
-    "pgcopylib==0.2.4.dev1",
+    "python-dateutil>=2.8.0",
     "light-compressor==0.1.1.dev1",
 ]
 
@@ -37,3 +37,6 @@ Changelog = "https://github.com/dns-technologies/pgpack/blob/main/CHANGELOG.md"
 [tool.setuptools]
 packages = {find = {where = ["src"]}}
 package-dir = {"" = "src"}
+
+[tool.setuptools.package-data]
+"*" = ["**/*.pyi", "**/*.pyd", "*.pyd", "*.md", "*.txt"]

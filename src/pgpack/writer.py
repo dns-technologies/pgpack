@@ -17,10 +17,6 @@ from polars import (
     DataFrame as PlFrame,
     LazyFrame as LfFrame,
 )
-from pgcopylib import (
-    PGCopyWriter,
-    PGOid,
-)
 
 from .common import (
     Error,
@@ -31,6 +27,10 @@ from .common import (
     metadata_from_frame,
     metadata_reader,
     pgpack_repr,
+)
+from .pgcopylib import (
+    PGCopyWriter,
+    PGOid,
 )
 
 
@@ -76,6 +76,88 @@ class PGPackWriter:
 
         if self.metadata:
             self.init_pgcopy(self.metadata)
+
+    @property
+    def dtypes(self) -> list[str]:
+        """Get column data types."""
+
+        return [pgtype.name for pgtype in self.pgtypes]
+
+    def __validate_write_state(self) -> None:
+        """Validate expected parameters."""
+
+        if not self.fileobj:
+            raise Error.PGPackNotDefineError("Fileobject not define.")
+        if not self.fileobj.writable():
+            raise Error.PGPackModeError("Fileobject don't support write.")
+        if not self.metadata:
+            raise Error.PGPackMetadataCrcError("Metadata error.")
+
+    def __get_compressor(self) -> CompressorType | None:
+        """Get current compressor."""
+
+        if self.compression_method is CompressionMethod.NONE:
+            return None
+        elif isinstance(self.compression_method, CompressionMethod):
+            return self.compression_method.compressor(self.compression_level)
+        else:
+            raise Error.PGPackTypeError(
+                f"Unsupported compression method {self.compression_method}"
+            )
+
+    def __write_header(self) -> None:
+        """Write PGPack header."""
+
+        if not self.pgcopy:
+            self.init_pgcopy(self.metadata)
+
+        self.pgcopy_start = self.fileobj.tell()
+
+        metadata_zlib = compress(self.metadata)
+        metadata_crc = pack(Fmt.U_LONG, crc32(metadata_zlib))
+        metadata_length = pack(Fmt.U_LONG, len(metadata_zlib))
+        compression_method = pack(Fmt.U_CHAR, self.compression_method.value)
+
+        for data in (
+            Signature.HEADER,
+            metadata_crc,
+            metadata_length,
+            metadata_zlib,
+            compression_method,
+            Signature.S3_FILE if self.s3_file else bytes(Size.S3_TAIL),
+        ):
+            self.pgcopy_start += self.fileobj.write(data)
+
+    def __write_data(self, bytes_data: Iterable[bytes]) -> None:
+        """Write PGCopy data."""
+
+        compressor = self.__get_compressor()
+        start_pos = self.fileobj.tell()
+
+        if compressor:
+            for chunk in compressor.send_chunks(bytes_data):
+                self.fileobj.write(chunk)
+            self.data_length = compressor.decompressed_size
+        else:
+            for chunk in bytes_data:
+                self.fileobj.write(chunk)
+            self.data_length = self.fileobj.tell() - start_pos
+
+        self.compressed_length = self.fileobj.tell() - self.pgcopy_start
+
+    def __write_trailer(self) -> None:
+        """Write compress length and data length."""
+
+        if not self.s3_file:
+            self.fileobj.seek(self.pgcopy_start - Size.S3_TAIL)
+
+        self.fileobj.write(
+            pack(
+                Fmt.COMPRESS_LENGTH,
+                self.compressed_length,
+                self.data_length,
+            )
+        )
 
     def init_pgcopy(
         self,
@@ -136,67 +218,13 @@ class PGPackWriter:
     ) -> int:
         """Convert pgcopy bytes to pgpack format."""
 
-        if self.compression_method is CompressionMethod.NONE:
-            _compressor = None
-        elif isinstance(self.compression_method, CompressionMethod):
-            _compressor = self.compression_method.compressor
-        else:
-            raise Error.PGPackTypeError(
-                f"Unsupported compression method {self.compression_method}"
-            )
-
-        if not self.fileobj:
-            raise Error.PGPackNotDefineError("Fileobject not define.")
-        if not self.fileobj.writable():
-            raise Error.PGPackModeError("Fileobject don't support write.")
-        if not self.metadata:
-            raise Error.PGPackMetadataCrcError("Metadata error.")
-
-        if not self.pgcopy:
-            self.init_pgcopy(self.metadata)
-
-        self.pgcopy_start = self.fileobj.tell()
-        metadata_zlib = compress(self.metadata)
-        metadata_crc = pack(Fmt.U_LONG, crc32(metadata_zlib))
-        metadata_length = pack(Fmt.U_LONG, len(metadata_zlib))
-        compression_method = pack(Fmt.U_CHAR, self.compression_method.value)
-
-        for data in (
-            Signature.HEADER,
-            metadata_crc,
-            metadata_length,
-            metadata_zlib,
-            compression_method,
-            Signature.S3_FILE if self.s3_file else bytes(Size.S3_TAIL),
-        ):
-            self.pgcopy_start += self.fileobj.write(data)
-
-        if _compressor:
-            compressor: CompressorType = _compressor(self.compression_level)
-            bytes_data = compressor.send_chunks(bytes_data)
-        else:
-            compressor = None
-
-        for data in bytes_data:
-            self.fileobj.write(data)
-
-        self.compressed_length = self.fileobj.tell() - self.pgcopy_start
-
-        if compressor:
-            self.data_length = compressor.decompressed_size
-        else:
-            self.data_length = self.compressed_length
-
-        if not self.s3_file:
-            self.fileobj.seek(self.pgcopy_start - Size.S3_TAIL)
-
-        self.fileobj.write(pack(
-            Fmt.COMPRESS_LENGTH,
-            self.compressed_length,
-            self.data_length,
-        ))
+        self.__validate_write_state()
+        self.__write_header()
+        self.__write_data(bytes_data)
+        self.__write_trailer()
         self.fileobj.flush()
         return self.tell()
+
 
     def tell(self) -> int:
         """Return current position."""

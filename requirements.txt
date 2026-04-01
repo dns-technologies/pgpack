@@ -1,5 +1,5 @@
 --extra-index-url https://dns-technologies.github.io/dbhose-dev-pip/simple/
 pandas>=2.1.0
 polars>=0.20.31
-pgcopylib==0.2.4.dev1
+python-dateutil>=2.8.0
 light_compressor==0.1.1.dev1

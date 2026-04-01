@@ -1,3 +1,26 @@
 include CHANGELOG.md
 include README.md
 include LICENSE
+
+include src/pgpack/pgcopylib/core/*.pyi
+recursive-include src/pgpack/pgcopylib *.pyi
+
+exclude src/pgpack/pgcopylib/core/*.c
+exclude src/pgpack/pgcopylib/core/*.pxd
+exclude src/pgpack/pgcopylib/core/*.pyx
+recursive-exclude src/pgpack/pgcopylib *.c
+recursive-exclude src/pgpack/pgcopylib *.pxd
+recursive-exclude src/pgpack/pgcopylib *.pyx
+
+exclude *.c
+exclude *.pxd
+exclude *.pyx
+exclude src/*.c
+exclude src/*.pxd
+exclude src/*.pyx
+exclude src/**/*.c
+exclude src/**/*.pxd
+exclude src/**/*.pyx
+global-exclude *.c
+global-exclude *.pxd
+global-exclude *.pyx

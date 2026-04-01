@@ -6,16 +6,6 @@ from light_compressor import (
     CompressionLevel,
     CompressionMethod,
 )
-from pgcopylib import (
-    PGCopyReader,
-    PGCopyWriter,
-    PGCopyError,
-    PGCopyRecordError,
-    PGCopySignatureError,
-    PGCopyTypeError,
-    PGCopyValueError,
-    PGOid,
-)
 
 from .common import (
     PGParam,
@@ -29,6 +19,16 @@ from .common.errors import (
     PGPackModeError,
     PGPackNotDefineError,
     PGPackTypeError,
+)
+from .pgcopylib import (
+    PGCopyReader,
+    PGCopyWriter,
+    PGCopyError,
+    PGCopyRecordError,
+    PGCopySignatureError,
+    PGCopyTypeError,
+    PGCopyValueError,
+    PGOid,
 )
 from .reader import PGPackReader
 from .writer import PGPackWriter
@@ -58,4 +58,4 @@ __all__ = (
     "metadata_reader",
 )
 __author__ = "0xMihalich"
-__version__ = "0.3.3.dev3"
+__version__ = "0.3.3.dev4"

@@ -5,8 +5,8 @@ from json import (
 
 from pandas import DataFrame as PdFrame
 from polars import DataFrame as PlFrame
-from pgcopylib import PGOid
 
+from ..pgcopylib.core.enums import PGOid
 from .detector import detect_oid
 from .param import PGParam
 
