@@ -225,7 +225,6 @@ class PGPackWriter:
         self.fileobj.flush()
         return self.tell()
 
-
     def tell(self) -> int:
         """Return current position."""
 
