@@ -710,4 +710,4 @@ class TestPGPackS3Mode:
 
 
 if __name__ == "__main__":
-    pytest.main([__file__, "-v"])
+    pytest.main([__file__, "-svv"])
