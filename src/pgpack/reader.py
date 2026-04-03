@@ -189,6 +189,9 @@ class PGPackReader:
     def tell(self) -> int:
         """Return current position."""
 
+        if not self.pgcopy:
+            return self.compression_stream.tell()
+
         return self.pgcopy.tell()
 
     def close(self) -> None:
