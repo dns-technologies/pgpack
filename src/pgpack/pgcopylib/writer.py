@@ -27,8 +27,8 @@ from .core.repr import pgcopylib_repr
 class PGCopyWriter:
     """PGCopy dump writer."""
 
-    fileobj: BufferedWriter
     pgtypes: list[PGOid]
+    fileobj: BufferedWriter | None
     pgoid: list[int]
     pgoid_functions: list[FunctionType]
     postgres_dtype: list[PostgreSQLDtype]
@@ -39,16 +39,16 @@ class PGCopyWriter:
 
     def __init__(
         self,
-        fileobj: BufferedWriter | None,
         pgtypes: list[PGOid],
+        fileobj: BufferedWriter | None = None,
     ) -> None:
         """Class initialization."""
 
         if not pgtypes:
             raise PGCopyRecordError("PGOids not defined!")
 
-        self.fileobj = fileobj
         self.pgtypes = pgtypes
+        self.fileobj = fileobj
         self.num_columns = len(pgtypes)
         self.num_rows = 0
         self.pos = 0

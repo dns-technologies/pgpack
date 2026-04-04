@@ -171,7 +171,7 @@ class PGPackWriter:
             self.pgtypes,
             self.pgparam,
         ) = metadata_reader(self.metadata)
-        self.pgcopy = PGCopyWriter(None, self.pgtypes)
+        self.pgcopy = PGCopyWriter(self.pgtypes)
 
     def from_rows(
         self,

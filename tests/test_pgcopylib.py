@@ -153,7 +153,7 @@ def sample_row():
 def sample_data(sample_pgtypes, sample_row):
     """Create buffer with sample data."""
     buffer = io.BytesIO()
-    writer = PGCopyWriter(buffer, sample_pgtypes)
+    writer = PGCopyWriter(sample_pgtypes, buffer)
     writer.write([sample_row])
     buffer.seek(0)
     return buffer
@@ -172,7 +172,7 @@ class TestPGCopyWriter:
         """Test basic write operation."""
 
         output = io.BytesIO()
-        writer = PGCopyWriter(output, sample_pgtypes)
+        writer = PGCopyWriter(sample_pgtypes, output)
         writer.write([sample_row])
         result = output.getvalue()
         assert len(result) > 0  # noqa: S101
@@ -189,7 +189,7 @@ class TestPGCopyWriter:
         """Test writing all supported data types."""
 
         output = io.BytesIO()
-        writer = PGCopyWriter(output, all_pgtypes)
+        writer = PGCopyWriter(all_pgtypes, output)
         writer.write([all_types_row])
         output.seek(0)
         reader = PGCopyReader(output, all_pgtypes)
@@ -235,7 +235,7 @@ class TestPGCopyWriter:
         """Test writing multiple rows."""
 
         output = io.BytesIO()
-        writer = PGCopyWriter(output, sample_pgtypes)
+        writer = PGCopyWriter(sample_pgtypes, output)
         writer.write([sample_row, sample_row])
         output.seek(0)
         reader = PGCopyReader(output, sample_pgtypes)
@@ -246,7 +246,7 @@ class TestPGCopyWriter:
         """Test writing empty rows."""
 
         output = io.BytesIO()
-        writer = PGCopyWriter(output, sample_pgtypes)
+        writer = PGCopyWriter(sample_pgtypes, output)
         writer.write([])
         result = output.getvalue()
         assert len(result) > 0  # noqa: S101
@@ -255,13 +255,13 @@ class TestPGCopyWriter:
         """Test writer with no pgtypes."""
 
         with pytest.raises(PGCopyRecordError, match="PGOids not defined!"):
-            PGCopyWriter(io.BytesIO(), [])
+            PGCopyWriter([], io.BytesIO())
 
     def test_writer_tell(self, sample_pgtypes, sample_row):
         """Test tell method."""
 
         output = io.BytesIO()
-        writer = PGCopyWriter(output, sample_pgtypes)
+        writer = PGCopyWriter(sample_pgtypes, output)
         assert writer.tell() == 0  # noqa: S101
         writer.write([sample_row])
         assert writer.tell() > 0  # noqa: S101
@@ -269,7 +269,7 @@ class TestPGCopyWriter:
     def test_writer_repr(self, sample_pgtypes):
         """Test string representation."""
 
-        writer = PGCopyWriter(io.BytesIO(), sample_pgtypes)
+        writer = PGCopyWriter(sample_pgtypes, io.BytesIO())
         repr_str = repr(writer)
         assert "PGCopy dump writer" in repr_str  # noqa: S101
         assert "Total columns: 3" in repr_str  # noqa: S101
@@ -312,7 +312,7 @@ class TestPGCopyReader:
         """Test read_info method."""
 
         buffer = io.BytesIO()
-        writer = PGCopyWriter(buffer, sample_pgtypes)
+        writer = PGCopyWriter(sample_pgtypes, buffer)
         writer.write([sample_row, sample_row])
         buffer.seek(0)
         reader = PGCopyReader(buffer)
@@ -323,7 +323,7 @@ class TestPGCopyReader:
         """Test read_info with pgtypes."""
 
         buffer = io.BytesIO()
-        writer = PGCopyWriter(buffer, sample_pgtypes)
+        writer = PGCopyWriter(sample_pgtypes, buffer)
         writer.write([sample_row, sample_row])
         buffer.seek(0)
         reader = PGCopyReader(buffer, sample_pgtypes)
@@ -358,7 +358,7 @@ class TestPGCopyReaderWithArrays:
         """Test writing rows with arrays."""
 
         output = io.BytesIO()
-        writer = PGCopyWriter(output, array_pgtypes)
+        writer = PGCopyWriter(array_pgtypes, output)
         writer.write([array_row])
         output.seek(0)
         reader = PGCopyReader(output, array_pgtypes)
@@ -382,7 +382,7 @@ class TestPGCopyReaderWithArrays:
         """Test roundtrip with arrays."""
 
         buffer = io.BytesIO()
-        writer = PGCopyWriter(buffer, array_pgtypes)
+        writer = PGCopyWriter(array_pgtypes, buffer)
         writer.write([array_row])
         buffer.seek(0)
         reader = PGCopyReader(buffer, array_pgtypes)
@@ -401,7 +401,7 @@ class TestPGCopyReaderWithArrays:
 
         row = ([], [], [], [], [], [], [])
         buffer = io.BytesIO()
-        writer = PGCopyWriter(buffer, array_pgtypes)
+        writer = PGCopyWriter(array_pgtypes, buffer)
         writer.write([row])
         buffer.seek(0)
         reader = PGCopyReader(buffer, array_pgtypes)
@@ -424,7 +424,7 @@ class TestPGCopyEdgeCases:
 
         row = (None, None, None)
         buffer = io.BytesIO()
-        writer = PGCopyWriter(buffer, sample_pgtypes)
+        writer = PGCopyWriter(sample_pgtypes, buffer)
         writer.write([row])
         buffer.seek(0)
         reader = PGCopyReader(buffer, sample_pgtypes)
@@ -439,7 +439,7 @@ class TestPGCopyEdgeCases:
 
         row = (1, "", uuid.uuid4())
         buffer = io.BytesIO()
-        writer = PGCopyWriter(buffer, sample_pgtypes)
+        writer = PGCopyWriter(sample_pgtypes, buffer)
         writer.write([row])
         buffer.seek(0)
         reader = PGCopyReader(buffer, sample_pgtypes)
@@ -451,7 +451,7 @@ class TestPGCopyEdgeCases:
         """Test with large number of rows."""
 
         buffer = io.BytesIO()
-        writer = PGCopyWriter(buffer, sample_pgtypes)
+        writer = PGCopyWriter(sample_pgtypes, buffer)
         rows = [sample_row for _ in range(1000)]
         writer.write(rows)
         buffer.seek(0)
@@ -466,7 +466,7 @@ class TestPGCopyEdgeCases:
         test_bytes = b"\xde\xad\xbe\xef"
         row = (test_bytes,)
         buffer = io.BytesIO()
-        writer = PGCopyWriter(buffer, pgtypes)
+        writer = PGCopyWriter(pgtypes, buffer)
         writer.write([row])
         buffer.seek(0)
         reader = PGCopyReader(buffer, pgtypes)
@@ -481,7 +481,7 @@ class TestPGCopyEdgeCases:
         test_value = decimal.Decimal("123456789.123456789")
         row = (test_value,)
         buffer = io.BytesIO()
-        writer = PGCopyWriter(buffer, pgtypes)
+        writer = PGCopyWriter(pgtypes, buffer)
         writer.write([row])
         buffer.seek(0)
         reader = PGCopyReader(buffer, pgtypes)
@@ -508,7 +508,7 @@ class TestPGCopyWriterFromGenerator:
                 yield sample_row
 
         output = io.BytesIO()
-        writer = PGCopyWriter(output, sample_pgtypes)
+        writer = PGCopyWriter(sample_pgtypes, output)
         writer.write(row_generator())
         output.seek(0)
         reader = PGCopyReader(output, sample_pgtypes)
@@ -519,7 +519,7 @@ class TestPGCopyWriterFromGenerator:
         """Test from_rows with iterator."""
 
         output = io.BytesIO()
-        writer = PGCopyWriter(output, sample_pgtypes)
+        writer = PGCopyWriter(sample_pgtypes, output)
         writer.write(iter([sample_row, sample_row]))
         output.seek(0)
         reader = PGCopyReader(output, sample_pgtypes)
@@ -559,13 +559,13 @@ class TestPGCopyWriterProperties:
     def test_num_columns(self, sample_pgtypes):
         """Test num_columns property."""
 
-        writer = PGCopyWriter(io.BytesIO(), sample_pgtypes)
+        writer = PGCopyWriter(sample_pgtypes, io.BytesIO())
         assert writer.num_columns == 3  # noqa: S101
 
     def test_num_rows_after_write(self, sample_pgtypes, sample_row):
         """Test num_rows after writing."""
 
-        writer = PGCopyWriter(io.BytesIO(), sample_pgtypes)
+        writer = PGCopyWriter(sample_pgtypes, io.BytesIO())
         assert writer.num_rows == 0  # noqa: S101
         writer.write([sample_row])
         assert writer.num_rows == 1  # noqa: S101

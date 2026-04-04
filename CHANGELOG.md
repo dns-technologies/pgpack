@@ -4,6 +4,9 @@
 
 * Developer release (not public to pip)
 * Swap PGPackWriter metadata and fileobj initialization parameters
+* Swap PGCopyWriter pgtypes and fileobj initialization parameters. fileobj now is optional
+* Update pytests
+* Update README.md
 
 ## 0.3.3.dev4
 

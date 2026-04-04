@@ -299,7 +299,7 @@ with open('dump.pgcopy', 'rb') as f:
     
     # Write to destination
     with open('output.pgcopy', 'wb') as out:
-        writer = PGCopyWriter(out, reader.pgtypes)
+        writer = PGCopyWriter(reader.pgtypes, out)
         writer.write(reader.to_rows())
 ```
 
