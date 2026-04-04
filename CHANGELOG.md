@@ -1,5 +1,10 @@
 # Version History
 
+## 0.3.3.dev5
+
+* Developer release (not public to pip)
+* Swap PGPackWriter metadata and fileobj initialization parameters
+
 ## 0.3.3.dev4
 
 * Developer release (not public to pip)

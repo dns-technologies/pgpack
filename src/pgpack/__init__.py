@@ -58,4 +58,4 @@ __all__ = (
     "metadata_reader",
 )
 __author__ = "0xMihalich"
-__version__ = "0.3.3.dev4"
+__version__ = "0.3.3.dev5"

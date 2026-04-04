@@ -418,10 +418,6 @@ class TestPGPackEdgeCases:
                 "int_col": [1, None, 3, None, 5],
                 "float_col": [1.5, None, 3.5, None, 5.5],
                 "str_col": ["a", None, "c", None, "e"],
-                # Note: String column is excluded from isna()
-                # checks due to pandas 3.0.1
-                # issues with scalar pd.NA detection.
-                # The roundtrip still works correctly.
             }
         )
         buffer = io.BytesIO()

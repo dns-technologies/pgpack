@@ -37,8 +37,8 @@ from .pgcopylib import (
 class PGPackWriter:
     """Class for write PGPack format."""
 
-    fileobj: BufferedWriter | None
     metadata: bytes | None
+    fileobj: BufferedWriter | None
     columns: list[str]
     pgtypes: list[PGOid]
     pgparam: list[PGParam]
@@ -52,16 +52,16 @@ class PGPackWriter:
 
     def __init__(
         self,
-        fileobj: BufferedWriter | None = None,
         metadata: bytes | None = None,
+        fileobj: BufferedWriter | None = None,
         compression_method: CompressionMethod = CompressionMethod.ZSTD,
         compression_level: int = CompressionLevel.ZSTD_DEFAULT,
         s3_file: bool = False,
     ) -> None:
         """Class initialization."""
 
-        self.fileobj = fileobj
         self.metadata = metadata
+        self.fileobj = fileobj
         self.compression_method = compression_method
         self.compression_level = compression_level
         self.s3_file = s3_file
