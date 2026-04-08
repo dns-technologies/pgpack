@@ -1,5 +1,10 @@
 # Version History
 
+## 0.3.3.dev6
+
+* Developer release (not public to pip)
+* Update depends light-compressor==0.1.1.dev2
+
 ## 0.3.3.dev5
 
 * Developer release (not public to pip)

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pgpack"
-version = "0.3.3.dev5"
+version = "0.3.3.dev6"
 description = "PGCopy dump packed into GZIP, LZ4, SNAPPY, ZSTD or uncompressed with meta data information packed into zlib."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -25,7 +25,7 @@ dependencies = [
     "pandas>=2.1.0",
     "polars>=0.20.31",
     "python-dateutil>=2.8.0",
-    "light-compressor==0.1.1.dev1",
+    "light-compressor==0.1.1.dev2",
 ]
 
 [project.urls]
