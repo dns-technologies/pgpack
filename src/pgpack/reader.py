@@ -146,6 +146,12 @@ class PGPackReader:
 
         return [pgtype.name for pgtype in self.pgtypes]
 
+    def read_info(self) -> None:
+        """Read info without reading data."""
+
+        if self.pgcopy:
+            self.pgcopy.read_info()
+
     def to_rows(self) -> Generator[list[Any], None, None]:
         """Convert to python objects."""
 

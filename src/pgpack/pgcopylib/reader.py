@@ -35,6 +35,7 @@ class PGCopyReader:
     pgoid_functions: list[FunctionType]
     postgres_dtype: list[PostgreSQLDtype]
     header: bytes
+    metadata: dict[str, dict[str, int]]
     flags_area: list[int]
     is_oid_enable: bool
     is_empty: bool
@@ -61,6 +62,10 @@ class PGCopyReader:
         if self.header != HEADER:
             raise PGCopySignatureError("PGCopy signature not match!")
 
+        self.metadata = [
+            {f"col_{num}": {"oid": pgoid.value}}
+            for num, pgoid in enumerate(self.pgtypes)
+        ]
         self.flags_area = [
             (byte >> i) & 1
             for byte in self.fileobj.read(4)

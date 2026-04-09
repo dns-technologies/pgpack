@@ -4,6 +4,8 @@
 
 * Developer release (not public to pip)
 * Update depends light-compressor==0.1.1.dev2
+* Add PGCopyReader.metadata attribute
+* Add PGPackReader.read_info() method
 
 ## 0.3.3.dev5
 
