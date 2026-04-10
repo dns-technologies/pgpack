@@ -8,9 +8,9 @@ from light_compressor import (
 )
 
 from .common import (
+    PGPackMeta,
     PGParam,
     metadata_from_frame,
-    metadata_reader,
 )
 from .common.errors import (
     PGPackError,
@@ -47,6 +47,7 @@ __all__ = (
     "PGOid",
     "PGPackError",
     "PGPackHeaderError",
+    "PGPackMeta",
     "PGPackMetadataCrcError",
     "PGPackModeError",
     "PGPackNotDefineError",
@@ -55,7 +56,6 @@ __all__ = (
     "PGPackWriter",
     "PGParam",
     "metadata_from_frame",
-    "metadata_reader",
 )
 __author__ = "0xMihalich"
-__version__ = "0.3.3.dev6"
+__version__ = "0.3.3.dev7"

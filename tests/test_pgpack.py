@@ -23,14 +23,70 @@ from pgpack import (
 def sample_metadata():
     """Create sample PGPack metadata as bytes."""
     metadata = [
-        [1, ["id", PGOid.int4.value, 4, 0, 0]],
-        [2, ["name", PGOid.text.value, -1, 0, 0]],
-        [3, ["age", PGOid.int4.value, 4, 0, 0]],
-        [4, ["active", PGOid.bool.value, 1, 0, 0]],
-        [5, ["salary", PGOid.float8.value, 8, 0, 0]],
-        [6, ["created_date", PGOid.date.value, 4, 0, 0]],
-        [7, ["created_datetime", PGOid.timestamp.value, 8, 0, 0]],
-        [8, ["tags", PGOid._text.value, -1, 0, 0]],
+        {
+            "id": {
+                "oid": PGOid.int4.value,
+                "length": 4,
+                "scale": 0,
+                "nested": 0,
+            }
+        },
+        {
+            "name": {
+                "oid": PGOid.text.value,
+                "length": -1,
+                "scale": 0,
+                "nested": 0,
+            }
+        },
+        {
+            "age": {
+                "oid": PGOid.int4.value,
+                "length": 4,
+                "scale": 0,
+                "nested": 0,
+            }
+        },
+        {
+            "active": {
+                "oid": PGOid.bool.value,
+                "length": 1,
+                "scale": 0,
+                "nested": 0,
+            }
+        },
+        {
+            "salary": {
+                "oid": PGOid.float8.value,
+                "length": 8,
+                "scale": 0,
+                "nested": 0,
+            }
+        },
+        {
+            "created_date": {
+                "oid": PGOid.date.value,
+                "length": 4,
+                "scale": 0,
+                "nested": 0,
+            }
+        },
+        {
+            "created_datetime": {
+                "oid": PGOid.timestamp.value,
+                "length": 8,
+                "scale": 0,
+                "nested": 0,
+            }
+        },
+        {
+            "tags": {
+                "oid": PGOid._text.value,
+                "length": -1,
+                "scale": 0,
+                "nested": 0,
+            }
+        },
     ]
     return json.dumps(metadata).encode("utf-8")
 
@@ -39,23 +95,142 @@ def sample_metadata():
 def sample_metadata_full():
     """Create full PGPack metadata for 17-column dataset."""
     metadata = [
-        [1, ["start_month", PGOid.date.value, 4, 0, 0]],
-        [2, ["start_day", PGOid.date.value, 4, 0, 0]],
-        [3, ["division_name", PGOid.text.value, -1, 0, 0]],
-        [4, ["rdc_name", PGOid.text.value, -1, 0, 0]],
-        [5, ["branch_name", PGOid.text.value, -1, 0, 0]],
-        [6, ["branch_guid", PGOid.uuid.value, 16, 0, 0]],
-        [7, ["category_guid", PGOid.uuid.value, 16, 0, 0]],
-        [8, ["category_name", PGOid.text.value, -1, 0, 0]],
-        [9, ["bonus_type", PGOid.text.value, -1, 0, 0]],
-        [10, ["category_rn", PGOid.int4.value, 4, 0, 0]],
-        [11, ["tso_metric1_rn", PGOid.int4.value, 4, 0, 0]],
-        [12, ["tso_metric2_rn", PGOid.int4.value, 4, 0, 0]],
-        [13, ["employee_total_rn", PGOid.int4.value, 4, 0, 0]],
-        [14, ["category_pcs", PGOid.int4.value, 4, 0, 0]],
-        [15, ["employee_tso_metric1", PGOid.int4.value, 4, 0, 0]],
-        [16, ["employee_tso_metric2", PGOid.int4.value, 4, 0, 0]],
-        [17, ["employee_tso_metric3", PGOid.int4.value, 4, 0, 0]],
+        {
+            "start_month": {
+                "oid": PGOid.date.value,
+                "length": 4,
+                "scale": 0,
+                "nested": 0,
+            }
+        },
+        {
+            "start_day": {
+                "oid": PGOid.date.value,
+                "length": 4,
+                "scale": 0,
+                "nested": 0,
+            }
+        },
+        {
+            "division_name": {
+                "oid": PGOid.text.value,
+                "length": -1,
+                "scale": 0,
+                "nested": 0,
+            }
+        },
+        {
+            "rdc_name": {
+                "oid": PGOid.text.value,
+                "length": -1,
+                "scale": 0,
+                "nested": 0,
+            }
+        },
+        {
+            "branch_name": {
+                "oid": PGOid.text.value,
+                "length": -1,
+                "scale": 0,
+                "nested": 0,
+            }
+        },
+        {
+            "branch_guid": {
+                "oid": PGOid.uuid.value,
+                "length": 16,
+                "scale": 0,
+                "nested": 0,
+            }
+        },
+        {
+            "category_guid": {
+                "oid": PGOid.uuid.value,
+                "length": 16,
+                "scale": 0,
+                "nested": 0,
+            }
+        },
+        {
+            "category_name": {
+                "oid": PGOid.text.value,
+                "length": -1,
+                "scale": 0,
+                "nested": 0,
+            }
+        },
+        {
+            "bonus_type": {
+                "oid": PGOid.text.value,
+                "length": -1,
+                "scale": 0,
+                "nested": 0,
+            }
+        },
+        {
+            "category_rn": {
+                "oid": PGOid.int4.value,
+                "length": 4,
+                "scale": 0,
+                "nested": 0,
+            }
+        },
+        {
+            "tso_metric1_rn": {
+                "oid": PGOid.int4.value,
+                "length": 4,
+                "scale": 0,
+                "nested": 0,
+            }
+        },
+        {
+            "tso_metric2_rn": {
+                "oid": PGOid.int4.value,
+                "length": 4,
+                "scale": 0,
+                "nested": 0,
+            }
+        },
+        {
+            "employee_total_rn": {
+                "oid": PGOid.int4.value,
+                "length": 4,
+                "scale": 0,
+                "nested": 0,
+            }
+        },
+        {
+            "category_pcs": {
+                "oid": PGOid.int4.value,
+                "length": 4,
+                "scale": 0,
+                "nested": 0,
+            }
+        },
+        {
+            "employee_tso_metric1": {
+                "oid": PGOid.int4.value,
+                "length": 4,
+                "scale": 0,
+                "nested": 0,
+            }
+        },
+        {
+            "employee_tso_metric2": {
+                "oid": PGOid.int4.value,
+                "length": 4,
+                "scale": 0,
+                "nested": 0,
+            }
+        },
+        {
+            "employee_tso_metric3": {
+                "oid": PGOid.int4.value,
+                "length": 4,
+                "scale": 0,
+                "nested": 0,
+            }
+        },
     ]
     return json.dumps(metadata).encode("utf-8")
 
@@ -466,7 +641,7 @@ class TestPGPackEdgeCases:
             def read(self, size):
                 if self.pos >= len(self.data):
                     return b""
-                result = self.data[self.pos: self.pos + size]
+                result = self.data[self.pos : self.pos + size]
                 self.pos += len(result)
                 return result
 
@@ -497,38 +672,262 @@ class TestPGPackAllTypes:
 
         metadata = [
             # [column_number, [name, oid, length, scale, nested]]
-            [1, ["col_int2", PGOid.int2.value, 2, 0, 0]],
-            [2, ["col_int4", PGOid.int4.value, 4, 0, 0]],
-            [3, ["col_int8", PGOid.int8.value, 8, 0, 0]],
-            [4, ["col_float4", PGOid.float4.value, 4, 0, 0]],
-            [5, ["col_float8", PGOid.float8.value, 8, 0, 0]],
-            [6, ["col_bool", PGOid.bool.value, 1, 0, 0]],
-            [7, ["col_text", PGOid.text.value, -1, 0, 0]],
-            [8, ["col_bytea", PGOid.bytea.value, -1, 0, 0]],
-            [9, ["col_uuid", PGOid.uuid.value, 16, 0, 0]],
-            [10, ["col_date", PGOid.date.value, 4, 0, 0]],
-            [11, ["col_timestamp", PGOid.timestamp.value, 8, 0, 0]],
-            [12, ["col_timestamptz", PGOid.timestamptz.value, 8, 0, 0]],
-            [13, ["col_time", PGOid.time.value, 8, 0, 0]],
-            [14, ["col_timetz", PGOid.timetz.value, 12, 0, 0]],
-            [15, ["col_interval", PGOid.interval.value, 16, 0, 0]],
-            [16, ["col_numeric", PGOid.numeric.value, -1, 0, 0]],
-            [17, ["col_json", PGOid.json.value, -1, 0, 0]],
-            [18, ["col_jsonb", PGOid.jsonb.value, -1, 0, 0]],
-            [19, ["col_inet", PGOid.inet.value, -1, 0, 0]],
-            [20, ["col_cidr", PGOid.cidr.value, -1, 0, 0]],
-            [21, ["col_macaddr", PGOid.macaddr.value, 6, 0, 0]],
-            [22, ["col_macaddr8", PGOid.macaddr8.value, 8, 0, 0]],
-            [23, ["col_bit", PGOid.bit.value, -1, 0, 0]],
-            [24, ["col_varbit", PGOid.varbit.value, -1, 0, 0]],
-            [25, ["col_oid", PGOid.oid.value, 4, 0, 0]],
-            [26, ["col_point", PGOid.point.value, 16, 0, 0]],
-            [27, ["col_line", PGOid.line.value, 24, 0, 0]],
-            [28, ["col_lseg", PGOid.lseg.value, 32, 0, 0]],
-            [29, ["col_box", PGOid.box.value, 32, 0, 0]],
-            [30, ["col_path", PGOid.path.value, -1, 0, 0]],
-            [31, ["col_polygon", PGOid.polygon.value, -1, 0, 0]],
-            [32, ["col_circle", PGOid.circle.value, 24, 0, 0]],
+            {
+                "col_int2": {
+                    "oid": PGOid.int2.value,
+                    "length": 2,
+                    "scale": 0,
+                    "nested": 0,
+                }
+            },
+            {
+                "col_int4": {
+                    "oid": PGOid.int4.value,
+                    "length": 4,
+                    "scale": 0,
+                    "nested": 0,
+                }
+            },
+            {
+                "col_int8": {
+                    "oid": PGOid.int8.value,
+                    "length": 8,
+                    "scale": 0,
+                    "nested": 0,
+                }
+            },
+            {
+                "col_float4": {
+                    "oid": PGOid.float4.value,
+                    "length": 4,
+                    "scale": 0,
+                    "nested": 0,
+                }
+            },
+            {
+                "col_float8": {
+                    "oid": PGOid.float8.value,
+                    "length": 8,
+                    "scale": 0,
+                    "nested": 0,
+                }
+            },
+            {
+                "col_bool": {
+                    "oid": PGOid.bool.value,
+                    "length": 1,
+                    "scale": 0,
+                    "nested": 0,
+                }
+            },
+            {
+                "col_text": {
+                    "oid": PGOid.text.value,
+                    "length": -1,
+                    "scale": 0,
+                    "nested": 0,
+                }
+            },
+            {
+                "col_bytea": {
+                    "oid": PGOid.bytea.value,
+                    "length": -1,
+                    "scale": 0,
+                    "nested": 0,
+                }
+            },
+            {
+                "col_uuid": {
+                    "oid": PGOid.uuid.value,
+                    "length": 16,
+                    "scale": 0,
+                    "nested": 0,
+                }
+            },
+            {
+                "col_date": {
+                    "oid": PGOid.date.value,
+                    "length": 4,
+                    "scale": 0,
+                    "nested": 0,
+                }
+            },
+            {
+                "col_timestamp": {
+                    "oid": PGOid.timestamp.value,
+                    "length": 8,
+                    "scale": 0,
+                    "nested": 0,
+                }
+            },
+            {
+                "col_timestamptz": {
+                    "oid": PGOid.timestamptz.value,
+                    "length": 8,
+                    "scale": 0,
+                    "nested": 0,
+                }
+            },
+            {
+                "col_time": {
+                    "oid": PGOid.time.value,
+                    "length": 8,
+                    "scale": 0,
+                    "nested": 0,
+                }
+            },
+            {
+                "col_timetz": {
+                    "oid": PGOid.timetz.value,
+                    "length": 12,
+                    "scale": 0,
+                    "nested": 0,
+                }
+            },
+            {
+                "col_interval": {
+                    "oid": PGOid.interval.value,
+                    "length": 16,
+                    "scale": 0,
+                    "nested": 0,
+                }
+            },
+            {
+                "col_numeric": {
+                    "oid": PGOid.numeric.value,
+                    "length": -1,
+                    "scale": 0,
+                    "nested": 0,
+                }
+            },
+            {
+                "col_json": {
+                    "oid": PGOid.json.value,
+                    "length": -1,
+                    "scale": 0,
+                    "nested": 0,
+                }
+            },
+            {
+                "col_jsonb": {
+                    "oid": PGOid.jsonb.value,
+                    "length": -1,
+                    "scale": 0,
+                    "nested": 0,
+                }
+            },
+            {
+                "col_inet": {
+                    "oid": PGOid.inet.value,
+                    "length": -1,
+                    "scale": 0,
+                    "nested": 0,
+                }
+            },
+            {
+                "col_cidr": {
+                    "oid": PGOid.cidr.value,
+                    "length": -1,
+                    "scale": 0,
+                    "nested": 0,
+                }
+            },
+            {
+                "col_macaddr": {
+                    "oid": PGOid.macaddr.value,
+                    "length": 6,
+                    "scale": 0,
+                    "nested": 0,
+                }
+            },
+            {
+                "col_macaddr8": {
+                    "oid": PGOid.macaddr8.value,
+                    "length": 8,
+                    "scale": 0,
+                    "nested": 0,
+                }
+            },
+            {
+                "col_bit": {
+                    "oid": PGOid.bit.value,
+                    "length": -1,
+                    "scale": 0,
+                    "nested": 0,
+                }
+            },
+            {
+                "col_varbit": {
+                    "oid": PGOid.varbit.value,
+                    "length": -1,
+                    "scale": 0,
+                    "nested": 0,
+                }
+            },
+            {
+                "col_oid": {
+                    "oid": PGOid.oid.value,
+                    "length": 4,
+                    "scale": 0,
+                    "nested": 0,
+                }
+            },
+            {
+                "col_point": {
+                    "oid": PGOid.point.value,
+                    "length": 16,
+                    "scale": 0,
+                    "nested": 0,
+                }
+            },
+            {
+                "col_line": {
+                    "oid": PGOid.line.value,
+                    "length": 24,
+                    "scale": 0,
+                    "nested": 0,
+                }
+            },
+            {
+                "col_lseg": {
+                    "oid": PGOid.lseg.value,
+                    "length": 32,
+                    "scale": 0,
+                    "nested": 0,
+                }
+            },
+            {
+                "col_box": {
+                    "oid": PGOid.box.value,
+                    "length": 32,
+                    "scale": 0,
+                    "nested": 0,
+                }
+            },
+            {
+                "col_path": {
+                    "oid": PGOid.path.value,
+                    "length": -1,
+                    "scale": 0,
+                    "nested": 0,
+                }
+            },
+            {
+                "col_polygon": {
+                    "oid": PGOid.polygon.value,
+                    "length": -1,
+                    "scale": 0,
+                    "nested": 0,
+                }
+            },
+            {
+                "col_circle": {
+                    "oid": PGOid.circle.value,
+                    "length": 24,
+                    "scale": 0,
+                    "nested": 0,
+                }
+            },
         ]
         metadata_bytes = json.dumps(metadata).encode("utf-8")
         row = (
@@ -580,7 +979,9 @@ class TestPGPackAllTypes:
         assert read_row[1] == 100000  # int4  # noqa: S101
         assert read_row[2] == 123456789012345  # int8  # noqa: S101
         assert abs(read_row[3] - 3.14159) < 0.0001  # float4  # noqa: S101
-        assert abs(read_row[4] - 3.141592653589793) < 0.0001  # float8  # noqa: E501, S101
+        assert (  # noqa: S101
+            abs(read_row[4] - 3.141592653589793) < 0.0001
+        )  # float8
         assert read_row[5] is True  # bool  # noqa: S101
         assert read_row[6] == "Hello, PostgreSQL!"  # text  # noqa: S101
         assert read_row[7] == b"\xde\xad\xbe\xef"  # bytea  # noqa: S101
@@ -598,14 +999,30 @@ class TestPGPackAllTypes:
         assert read_row[13] == datetime.time(  # noqa: S101
             14, 30, 0, tzinfo=datetime.timezone.utc
         )  # timetz
-        assert read_row[14] == relativedelta(months=6, days=5)  # interval  # noqa: E501, S101
-        assert read_row[15] == decimal.Decimal("1234.56789")  # numeric  # noqa: E501, S101
-        assert read_row[16] == {"key": "value", "number": 42}  # json  # noqa: E501, S101
-        assert read_row[17] == {"key": "value", "number": 42}  # jsonb  # noqa: E501, S101
-        assert read_row[18] == ipaddress.IPv4Address("192.168.1.1")  # inet  # noqa: E501, S101
-        assert read_row[19] == ipaddress.IPv4Network("192.168.1.0/24")  # cidr  # noqa: E501, S101
+        assert read_row[14] == relativedelta(  # noqa: S101
+            months=6, days=5
+        )  # interval
+        assert read_row[15] == decimal.Decimal(  # noqa: S101
+            "1234.56789"
+        )  # numeric
+        assert read_row[16] == {  # noqa: S101
+            "key": "value",
+            "number": 42,
+        }  # json
+        assert read_row[17] == {  # noqa: S101
+            "key": "value",
+            "number": 42,
+        }  # jsonb
+        assert read_row[18] == ipaddress.IPv4Address(  # noqa: S101
+            "192.168.1.1"
+        )  # inet
+        assert read_row[19] == ipaddress.IPv4Network(  # noqa: S101
+            "192.168.1.0/24"
+        )  # cidr
         assert read_row[20] == "08:00:2b:01:02:03"  # macaddr  # noqa: S101
-        assert read_row[21] == "08:00:2b:01:02:03:04:05"  # macaddr8  # noqa: E501, S101
+        assert (  # noqa: S101
+            read_row[21] == "08:00:2b:01:02:03:04:05"
+        )  # macaddr8
         assert read_row[22] == "101010"  # bit  # noqa: S101
         assert read_row[23] == "1010101010"  # varbit  # noqa: S101
         assert read_row[24] == 12345  # oid  # noqa: S101
@@ -613,8 +1030,16 @@ class TestPGPackAllTypes:
         assert read_row[26] == (1.5, 2.5, 3.5)  # line  # noqa: S101
         assert read_row[27] == [(1.0, 1.0), (2.0, 2.0)]  # lseg  # noqa: S101
         assert read_row[28] == ((1.0, 1.0), (2.0, 2.0))  # box  # noqa: S101
-        assert read_row[29] == [(1.0, 1.0), (2.0, 2.0), (3.0, 1.0)]  # path  # noqa: E501, S101
-        assert read_row[30] == ((1.0, 1.0), (2.0, 2.0), (3.0, 1.0))  # polygon  # noqa: E501, S101
+        assert read_row[29] == [  # noqa: S101
+            (1.0, 1.0),
+            (2.0, 2.0),
+            (3.0, 1.0),
+        ]  # path
+        assert read_row[30] == (  # noqa: S101
+            (1.0, 1.0),
+            (2.0, 2.0),
+            (3.0, 1.0),
+        )  # polygon
         assert read_row[31] == (2.5, 2.5, 1.5)  # circle  # noqa: S101
         reader.close()
 

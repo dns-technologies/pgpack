@@ -1,5 +1,22 @@
 # Version History
 
+## 0.3.3.dev7
+
+* Developer release (not public to pip)
+* Change metadata structure
+* Add PGPackMeta class
+* Add init_metadata() function
+* Change detect_oid() function
+* Refactor PGReader
+* Refactor PGPackReader
+* Refactor PGPackWriter
+* Rename PGPackReader.pgcopy to PGPackReader._reader
+* Rename PGPackReader.pgcopy_start to self._reader_pos
+* Rename PGPackWriter.pgcopy to PGPackWriter._writer
+* Rename PGPackWriter.pgcopy_start to self._writer_pos
+* Update pytests
+* Update README.md
+
 ## 0.3.3.dev6
 
 * Developer release (not public to pip)

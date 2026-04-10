@@ -23,6 +23,7 @@ from .core.functions import (
     skip_all,
 )
 from .core.header import HEADER
+from .core.metadata import init_metadata
 from .core.repr import pgcopylib_repr
 
 
@@ -48,24 +49,17 @@ class PGCopyReader:
     def __init__(
         self,
         fileobj: BufferedReader,
-        pgtypes: list[PGOid] | None = None,
+        metadata: list[dict[str, dict[str, int]]] | list[PGOid] | None = None,
     ) -> None:
         """Class initialization."""
 
-        if not pgtypes:
-            pgtypes = []
-
+        self.metadata, self.pgtypes = init_metadata(metadata)
         self.fileobj = fileobj
-        self.pgtypes = pgtypes
         self.header = self.fileobj.read(11)
 
         if self.header != HEADER:
             raise PGCopySignatureError("PGCopy signature not match!")
 
-        self.metadata = [
-            {f"col_{num}": {"oid": pgoid.value}}
-            for num, pgoid in enumerate(self.pgtypes)
-        ]
         self.flags_area = [
             (byte >> i) & 1
             for byte in self.fileobj.read(4)

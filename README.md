@@ -63,14 +63,13 @@ Metadata contains column information in the following structure:
 
 ```json
 [
-    [1, ["column_name", oid, length, scale, nested]],
-    [2, ["another_column", oid, length, scale, nested]],
+    {"column_name": {"oid": oid, "length": length, "scale": scale, "nested": nested}},
+    {"another_column": {"oid": oid, "length": length, "scale": scale, "nested": nested}},
     ...
 ]
 ```
 
 Where:
-- `column_number` – Sequential column index (starting from 1)
 - `column_name` – Column name as string
 - `oid` – PostgreSQL OID value (e.g., 23 for int4, 25 for text)
 - `length` – Fixed length for fixed-size types, -1 for variable length
@@ -121,8 +120,8 @@ reader = PGPackReader(fileobj)
 | `compression_method` | CompressionMethod used |
 | `compression_stream` | BufferedReader for decompressed data |
 | `s3_file` | Boolean indicating S3 mode |
-| `pgcopy_start` | Offset of compressed data start |
-| `pgcopy` | PGCopyReader instance |
+| `_reader` | PGCopyReader instance |
+| `_reader_pos` | Offset of compressed data start |
 
 ### Methods
 

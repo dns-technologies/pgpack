@@ -21,6 +21,7 @@ from .core.functions import (
     nullable_writer,
     writer,
 )
+from .core.metadata import init_metadata
 from .core.repr import pgcopylib_repr
 
 
@@ -39,22 +40,23 @@ class PGCopyWriter:
 
     def __init__(
         self,
-        pgtypes: list[PGOid],
+        metadata: list[dict[str, dict[str, int]]] | list[PGOid] | None = None,
         fileobj: BufferedWriter | None = None,
     ) -> None:
         """Class initialization."""
 
-        if not pgtypes:
+        self.metadata, self.pgtypes = init_metadata(metadata)
+
+        if not self.pgtypes:
             raise PGCopyRecordError("PGOids not defined!")
 
-        self.pgtypes = pgtypes
         self.fileobj = fileobj
-        self.num_columns = len(pgtypes)
+        self.num_columns = len(self.pgtypes)
         self.num_rows = 0
         self.pos = 0
         self.postgres_dtype: list[PostgreSQLDtype] = [
             PGOidToDType[pgtype]
-            for pgtype in pgtypes
+            for pgtype in self.pgtypes
         ]
         self.pgoid_functions: list[FunctionType] = [
             PGOidToDType[ArrayOidToOid[self.pgtypes[column]]].write

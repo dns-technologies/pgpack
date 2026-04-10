@@ -1,5 +1,6 @@
 from collections.abc import Iterable
 from io import BufferedWriter
+from json import dumps
 from struct import pack
 from typing import Any
 from zlib import (
@@ -23,9 +24,9 @@ from .common import (
     Fmt,
     Signature,
     Size,
+    PGPackMeta,
     PGParam,
     metadata_from_frame,
-    metadata_reader,
     pgpack_repr,
 )
 from .pgcopylib import (
@@ -37,7 +38,7 @@ from .pgcopylib import (
 class PGPackWriter:
     """Class for write PGPack format."""
 
-    metadata: bytes | None
+    metadata: PGPackMeta
     fileobj: BufferedWriter | None
     columns: list[str]
     pgtypes: list[PGOid]
@@ -47,12 +48,12 @@ class PGPackWriter:
     compression_method: CompressionMethod
     compression_level: int
     s3_file: bool
-    pgcopy_start: int | None = None
-    pgcopy: PGCopyWriter | None = None
+    _writer: PGCopyWriter | None = None
+    _writer_pos: int | None = None
 
     def __init__(
         self,
-        metadata: bytes | None = None,
+        metadata: PGPackMeta | list[dict[str, Any]] | bytes | None = None,
         fileobj: BufferedWriter | None = None,
         compression_method: CompressionMethod = CompressionMethod.ZSTD,
         compression_level: int = CompressionLevel.ZSTD_DEFAULT,
@@ -60,7 +61,7 @@ class PGPackWriter:
     ) -> None:
         """Class initialization."""
 
-        self.metadata = metadata
+        self.metadata = None
         self.fileobj = fileobj
         self.compression_method = compression_method
         self.compression_level = compression_level
@@ -70,12 +71,13 @@ class PGPackWriter:
         self.pgparam = []
         self.compressed_length = Size.SEEK_SET
         self.data_length = -Size.SEEK_CUR
+        self._writer = None
 
         if self.fileobj:
-            self.pgcopy_start = self.fileobj.tell()
+            self._writer_pos = self.fileobj.tell()
 
-        if self.metadata:
-            self.init_pgcopy(self.metadata)
+        if metadata:
+            self.init_pgcopy(metadata)
 
     @property
     def dtypes(self) -> list[str]:
@@ -108,12 +110,13 @@ class PGPackWriter:
     def __write_header(self) -> None:
         """Write PGPack header."""
 
-        if not self.pgcopy:
+        if not self._writer:
             self.init_pgcopy(self.metadata)
 
-        self.pgcopy_start = self.fileobj.tell()
+        self._writer_pos = self.fileobj.tell()
 
-        metadata_zlib = compress(self.metadata)
+        metadata_bytes = bytes(self.metadata)
+        metadata_zlib = compress(metadata_bytes)
         metadata_crc = pack(Fmt.U_LONG, crc32(metadata_zlib))
         metadata_length = pack(Fmt.U_LONG, len(metadata_zlib))
         compression_method = pack(Fmt.U_CHAR, self.compression_method.value)
@@ -126,7 +129,7 @@ class PGPackWriter:
             compression_method,
             Signature.S3_FILE if self.s3_file else bytes(Size.S3_TAIL),
         ):
-            self.pgcopy_start += self.fileobj.write(data)
+            self._writer_pos += self.fileobj.write(data)
 
     def __write_data(self, bytes_data: Iterable[bytes]) -> None:
         """Write PGCopy data."""
@@ -143,13 +146,13 @@ class PGPackWriter:
                 self.fileobj.write(chunk)
             self.data_length = self.fileobj.tell() - start_pos
 
-        self.compressed_length = self.fileobj.tell() - self.pgcopy_start
+        self.compressed_length = self.fileobj.tell() - self._writer_pos
 
     def __write_trailer(self) -> None:
         """Write compress length and data length."""
 
         if not self.s3_file:
-            self.fileobj.seek(self.pgcopy_start - Size.S3_TAIL)
+            self.fileobj.seek(self._writer_pos - Size.S3_TAIL)
 
         self.fileobj.write(
             pack(
@@ -161,17 +164,24 @@ class PGPackWriter:
 
     def init_pgcopy(
         self,
-        metadata: bytes,
+        metadata: PGPackMeta | list[dict[str, Any]] | bytes,
     ) -> None:
         """Initialize pgcopy from metadata."""
 
-        self.metadata = metadata
-        (
-            self.columns,
-            self.pgtypes,
-            self.pgparam,
-        ) = metadata_reader(self.metadata)
-        self.pgcopy = PGCopyWriter(self.pgtypes)
+        if isinstance(metadata, PGPackMeta):
+            self.metadata = metadata
+        elif isinstance(metadata, bytes):
+            self.metadata = PGPackMeta.from_bytes(metadata)
+        elif isinstance(metadata, list):
+            pg_metadata = dumps(metadata, ensure_ascii=False).encode("utf-8")
+            self.metadata = PGPackMeta.from_bytes(pg_metadata)
+        else:
+            raise Error.PGPackTypeError("Unsupported metadata type.")
+
+        self.columns = self.metadata.columns
+        self.pgtypes = self.metadata.pgtypes
+        self.pgparam = self.metadata.pgparams
+        self._writer = PGCopyWriter(self.pgtypes)
 
     def from_rows(
         self,
@@ -182,10 +192,10 @@ class PGPackWriter:
         if not self.metadata:
             raise Error.PGPackMetadataCrcError("Metadata error.")
 
-        if not self.pgcopy:
+        if not self._writer:
             self.init_pgcopy(self.metadata)
 
-        return self.from_bytes(self.pgcopy.from_rows(dtype_values))
+        return self.from_bytes(self._writer.from_rows(dtype_values))
 
     def from_pandas(
         self,
@@ -228,8 +238,8 @@ class PGPackWriter:
     def tell(self) -> int:
         """Return current position."""
 
-        if self.pgcopy:
-            return self.pgcopy.tell()
+        if self._writer:
+            return self._writer.tell()
 
         return self.fileobj.tell()
 

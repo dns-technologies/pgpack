@@ -56,16 +56,16 @@ AssociatePyType: dict[Any, tuple[int, ...]] = {
 }
 
 
-def detect_oid(
+def __detect_oid(
     data_values: Any,
     is_array: bool = False,
     nested: int = 0,
 ) -> tuple[int, ...]:
-    """Associate python type with postgres type."""
+    """Get postgres integers params from python type."""
 
     for value in data_values:
         if isinstance(value, PdSeries | PlSeries | List | list | tuple):
-            pg_type = detect_oid(value, True, nested + 1)
+            pg_type = __detect_oid(value, True, nested + 1)
 
             if pg_type:
                 return pg_type
@@ -81,3 +81,15 @@ def detect_oid(
             return pg_oid[0], *pg_oid[2:], nested
 
     return AssociatePyType[str]
+
+
+def detect_oid(data_value: Any) -> dict[str, dict[str, int]]:
+    """Associate python type with postgres type."""
+
+    find_items = __detect_oid(data_value)
+    return {
+        "oid": find_items[0],
+        "length": find_items[1],
+        "scale": find_items[2],
+        "nested": find_items[3],
+    }

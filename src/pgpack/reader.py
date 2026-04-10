@@ -24,9 +24,8 @@ from .common import (
     Fmt,
     Signature,
     Size,
+    PGPackMeta,
     PGParam,
-    metadata_reader,
-    pandas_astype,
     pgpack_repr,
 )
 from .pgcopylib import (
@@ -45,7 +44,7 @@ class PGPackReader:
     """Class for read PGPack format."""
 
     fileobj: BufferedReader
-    metadata: bytes
+    metadata: PGPackMeta
     columns: list[str]
     pgtypes: list[PGOid]
     pgparam: list[PGParam]
@@ -54,9 +53,9 @@ class PGPackReader:
     compression_method: CompressionMethod
     compression_stream: BufferedReader
     s3_file: bool
-    pgcopy_start: int
-    pgcopy: PGCopyReader | None
     schema_overrides: dict[str, Object]
+    _reader_pos: int
+    _reader: PGCopyReader | None
 
     def __init__(
         self,
@@ -79,12 +78,10 @@ class PGPackReader:
         if crc32(metadata_zlib) != metadata_crc:
             raise Error.PGPackMetadataCrcError()
 
-        self.metadata = decompress(metadata_zlib)
-        (
-            self.columns,
-            self.pgtypes,
-            self.pgparam,
-        ) = metadata_reader(self.metadata)
+        self.metadata = PGPackMeta.from_bytes(decompress(metadata_zlib))
+        self.columns = self.metadata.columns
+        self.pgtypes = self.metadata.pgtypes
+        self.pgparam = self.metadata.pgparams
         (
             compression_method,
             self.compressed_length,
@@ -102,7 +99,7 @@ class PGPackReader:
             self.compressed_length,
             self.data_length,
         ) == Signature.S3_FILE_INTEGERS
-        self.pgcopy_start = self.fileobj.tell()
+        self._reader_pos = self.fileobj.tell()
 
         if self.s3_file:
             self.fileobj.seek(-Size.S3_TAIL, Size.SEEK_END)
@@ -114,16 +111,16 @@ class PGPackReader:
                 Fmt.COMPRESS_LENGTH,
                 self.fileobj.read(Size.S3_TAIL)
             )
-            self.fileobj.seek(self.pgcopy_start)
+            self.fileobj.seek(self._reader_pos)
             self.fileobj = LimitedReader(self.fileobj, limit)
 
         try:
-            self.pgcopy = PGCopyReader(
+            self._reader = PGCopyReader(
                 self.compression_stream,
                 self.pgtypes,
             )
         except IndexError:
-            self.pgcopy = None
+            self._reader = None
 
         self.schema_overrides = {
             column: Object
@@ -149,16 +146,16 @@ class PGPackReader:
     def read_info(self) -> None:
         """Read info without reading data."""
 
-        if self.pgcopy:
-            self.pgcopy.read_info()
+        if self._reader:
+            self._reader.read_info()
 
     def to_rows(self) -> Generator[list[Any], None, None]:
         """Convert to python objects."""
 
-        if not self.pgcopy:
+        if not self._reader:
             return []
 
-        return self.pgcopy.to_rows()
+        return self._reader.to_rows()
 
     def to_pandas(self) -> PdFrame:
         """Convert to pandas.DataFrame."""
@@ -166,10 +163,7 @@ class PGPackReader:
         return PdFrame(
             data=self.to_rows(),
             columns=self.columns,
-        ).astype(pandas_astype(
-            self.columns,
-            self.pgcopy.postgres_dtype if self.pgcopy else [],
-        ))
+        ).astype(self.metadata.pandas_astype)
 
     def to_polars(self, is_lazy: bool = False) -> PlFrame | LfFrame:
         """Convert to polars.DataFrame."""
@@ -185,7 +179,7 @@ class PGPackReader:
         """Get raw unpacked pgcopy data."""
 
         if self.compression_method is CompressionMethod.NONE:
-            self.compression_stream.seek(self.pgcopy_start)
+            self.compression_stream.seek(self._reader_pos)
         else:
             self.compression_stream.seek(Size.SEEK_SET)
 
@@ -195,10 +189,10 @@ class PGPackReader:
     def tell(self) -> int:
         """Return current position."""
 
-        if not self.pgcopy:
+        if not self._reader:
             return self.compression_stream.tell()
 
-        return self.pgcopy.tell()
+        return self._reader.tell()
 
     def close(self) -> None:
         """Close file object."""
