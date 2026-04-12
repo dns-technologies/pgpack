@@ -253,7 +253,7 @@ class PGPackWriter:
         if self._writer:
             return self._writer.tell()
 
-        return self.fileobj.tell()
+        return self.fileobj.tell() or self.data_length
 
     def close(self) -> None:
         """Close file object."""

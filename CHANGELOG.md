@@ -18,6 +18,7 @@
 * Rename PGPackReader.pgcopy_start to self._reader_pos
 * Rename PGPackWriter.pgcopy to PGPackWriter._writer
 * Rename PGPackWriter.pgcopy_start to self._writer_pos
+* Improve PGPackWriter.tell() method
 * Update pytests
 * Update README.md
 
