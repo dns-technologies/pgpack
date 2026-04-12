@@ -90,7 +90,7 @@ class PGPackMeta(NamedTuple):
 
         return f"""\
 Column Names: [{", ".join(self.columns)}]
-Column Types: [{", ".join(self.pgtypes)}]
+Column Types: [{", ".join(pgtype.name for pgtype in self.pgtypes)}]
 Total Columns: {len(self.columns)}\
 """
 
@@ -98,16 +98,6 @@ Total Columns: {len(self.columns)}\
 def metadata_from_frame(frame: PdFrame | PlFrame) -> bytes:
     """Generate metadata from pandas.DataFrame | polars.DataFrame."""
 
-    # pgcopy_metadata = [
-    #     {str(column): {
-    #         "oid": oid,
-    #         "length": length,
-    #         "scale": scale,
-    #         "nested": nested,
-    #     }}
-    #     for column in frame.columns
-    #     for oid, length, scale, nested in detect_oid(frame[column])
-    # ]
     pgcopy_metadata = list(map(
         lambda column: {str(column): detect_oid(frame[column])},
         frame.columns,

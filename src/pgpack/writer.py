@@ -85,6 +85,18 @@ class PGPackWriter:
 
         return [pgtype.name for pgtype in self.pgtypes]
 
+    @property
+    def num_columns(self) -> int:
+        """Get number of columns."""
+
+        return len(self.columns)
+
+    @property
+    def num_rows(self) -> int:
+        """Get number of rows read so far."""
+
+        return self._writer.num_rows
+
     def __validate_write_state(self) -> None:
         """Validate expected parameters."""
 

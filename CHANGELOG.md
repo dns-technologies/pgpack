@@ -5,6 +5,10 @@
 * Developer release (not public to pip)
 * Change metadata structure
 * Add PGPackMeta class
+* Add PGPackReader.num_columns property method
+* Add PGPackReader.num_rows property method
+* Add PGPackWriter.num_columns property method
+* Add PGPackWriter.num_rows property method
 * Add init_metadata() function
 * Change detect_oid() function
 * Refactor PGReader
