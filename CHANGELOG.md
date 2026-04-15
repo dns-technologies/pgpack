@@ -5,6 +5,10 @@
 * Developer release (not public to pip)
 * Change metadata structure
 * Add PGPackMeta class
+* Add PGCopyReader.columns property method
+* Add PGCopyReader.dtypes property method
+* Add PGCopyWriter.columns property method
+* Add PGCopyWriter.dtypes property method
 * Add PGPackReader.num_columns property method
 * Add PGPackReader.num_rows property method
 * Add PGPackWriter.num_columns property method

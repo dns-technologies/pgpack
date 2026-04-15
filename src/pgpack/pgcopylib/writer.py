@@ -74,6 +74,22 @@ class PGCopyWriter:
         ]
         self.buffer_object = BytesIO()
 
+    @property
+    def columns(self) -> list[str]:
+        """Get column names."""
+
+        return [
+            column
+            for columns in self.metadata
+            for column, _ in columns.items()
+        ]
+
+    @property
+    def dtypes(self) -> list[str]:
+        """Get column data types."""
+
+        return [pgtype.name for pgtype in self.pgtypes]
+
     def write_row(
         self,
         dtype_values: list[Any] | tuple[Any],

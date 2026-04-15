@@ -36,7 +36,7 @@ class PGCopyReader:
     pgoid_functions: list[FunctionType]
     postgres_dtype: list[PostgreSQLDtype]
     header: bytes
-    metadata: dict[str, dict[str, int]]
+    metadata: list[dict[str, dict[str, int]]]
     flags_area: list[int]
     is_oid_enable: bool
     is_empty: bool
@@ -108,6 +108,22 @@ class PGCopyReader:
             for column in range(self.num_columns)
         ]
         self.buffer_object = BytesIO()
+
+    @property
+    def columns(self) -> list[str]:
+        """Get column names."""
+
+        return [
+            column
+            for columns in self.metadata
+            for column, _ in columns.items()
+        ]
+
+    @property
+    def dtypes(self) -> list[str]:
+        """Get column data types."""
+
+        return [pgtype.name for pgtype in self.pgtypes]
 
     def read_info(self) -> None:
         """Read info without reading data."""
