@@ -37,6 +37,7 @@ from .pgcopylib import (
     ISLAZY,
 )
 
+
 class PGPackReader:
     """Class for read PGPack format."""
 
