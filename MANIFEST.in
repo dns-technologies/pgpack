@@ -3,7 +3,9 @@ include README.md
 include LICENSE
 
 include src/pgpack/pgcopylib/core/*.pyi
+include src/pgpack/pgcopylib/core/*.pyd
 recursive-include src/pgpack/pgcopylib *.pyi
+recursive-include src/pgpack/pgcopylib *.pyd
 
 exclude src/pgpack/pgcopylib/core/*.c
 exclude src/pgpack/pgcopylib/core/*.pxd

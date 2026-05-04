@@ -3,6 +3,7 @@
 ## 0.4.0.dev0
 
 * Developer release (not public to pip)
+* Add build wheels for manylinux aarch64
 * Add PGCopyReader.schema_overrides attribute
 * Add PGCopyReader.pandas_astype attribute
 * Add PGCopyReader.to_pandas() method
@@ -17,6 +18,9 @@
 * Change PGPackReader._reader() initialization parameter from self.pgtypes to self.metadata.pgcopy_metadata
 * Change PGPackWriter._writer() initialization parameter from self.pgtypes to self.metadata.pgcopy_metadata
 * Code refactor
+* Update build_wheels.yml
+* Update MANIFEST.in
+* Update depends light-compressor==0.1.1.dev3
 
 ## 0.3.3.dev7
 
