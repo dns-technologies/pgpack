@@ -1,5 +1,6 @@
 """PGCopy bynary dump parser."""
 
+from .core.casts import pandas_astype
 from .core.errors import (
     PGCopyError,
     PGCopyRecordError,
@@ -8,8 +9,14 @@ from .core.errors import (
     PGCopyValueError,
 )
 from .core.dtype import PostgreSQLDtype
-from .core.enums import PGOid
-from .reader import PGCopyReader
+from .core.enums import (
+    PGOid,
+    PGOidToDType,
+)
+from .reader import (
+    PGCopyReader,
+    ISLAZY,
+)
 from .writer import PGCopyWriter
 
 
@@ -22,5 +29,8 @@ __all__ = (
     "PGCopyValueError",
     "PGCopyWriter",
     "PGOid",
+    "PGOidToDType",
     "PostgreSQLDtype",
+    "pandas_astype",
+    "ISLAZY",
 )

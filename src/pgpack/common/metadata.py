@@ -7,11 +7,7 @@ from typing import NamedTuple
 from pandas import DataFrame as PdFrame
 from polars import DataFrame as PlFrame
 
-from ..pgcopylib.core.enums import (
-    PGOid,
-    PGOidToDType,
-)
-from .casts import pandas_astype
+from ..pgcopylib.core.enums import PGOid
 from .detector import detect_oid
 from .param import PGParam
 
@@ -23,15 +19,6 @@ class PGPackMeta(NamedTuple):
     pgtypes: list[PGOid]
     pgparams: list[PGParam]
     pgcopy_metadata: list[dict[str, dict[str, int]]]
-
-    @property
-    def pandas_astype(self) -> dict[str, str]:
-        """Make pandas dtypes from columns."""
-
-        return pandas_astype(
-            self.columns,
-            [PGOidToDType[oid] for oid in self.pgtypes],
-        )
 
     @classmethod
     def from_params(

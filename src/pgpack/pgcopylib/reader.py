@@ -10,6 +10,14 @@ from struct import (
     unpack,
 )
 
+from pandas import DataFrame as PdFrame
+from polars import (
+    DataFrame as PlFrame,
+    LazyFrame as LfFrame,
+    Object,
+)
+
+from .core.casts import pandas_astype
 from .core.dtype import PostgreSQLDtype
 from .core.enums import (
     ArrayOidToOid,
@@ -25,6 +33,12 @@ from .core.functions import (
 from .core.header import HEADER
 from .core.metadata import init_metadata
 from .core.repr import pgcopylib_repr
+
+
+ISLAZY = {
+    False: PlFrame,
+    True: LfFrame,
+}
 
 
 class PGCopyReader:
@@ -45,6 +59,8 @@ class PGCopyReader:
     num_columns: int
     num_rows: int
     buffer_object: BytesIO
+    schema_overrides: dict[str, Object]
+    pandas_astype: dict[str, str]
 
     def __init__(
         self,
@@ -108,6 +124,20 @@ class PGCopyReader:
             for column in range(self.num_columns)
         ]
         self.buffer_object = BytesIO()
+        self.schema_overrides = {
+            column: Object
+            for column, pgtype in zip(self.columns, self.pgtypes)
+            if pgtype in (
+                PGOid._uuid,
+                PGOid._json,
+                PGOid._jsonb,
+                PGOid._inet,
+                PGOid._cidr,
+                PGOid._tsquery,
+                PGOid._tsvector,
+            )
+        }
+        self.pandas_astype = pandas_astype(self.columns, self.postgres_dtype)
 
     @property
     def columns(self) -> list[str]:
@@ -167,6 +197,30 @@ class PGCopyReader:
                 self.fileobj,
                 self.column_length,
             )
+
+    def to_pandas(self) -> PdFrame:
+        """Convert to pandas.DataFrame."""
+
+        return PdFrame(
+            data=self.to_rows(),
+            columns=self.columns,
+        ).astype(self.pandas_astype)
+
+    def to_polars(self, is_lazy: bool = False) -> PlFrame | LfFrame:
+        """Convert to polars.DataFrame."""
+
+        return ISLAZY[is_lazy](
+            data=self.to_rows(),
+            schema=self.columns,
+            schema_overrides=self.schema_overrides,
+            infer_schema_length=None,
+        )
+
+    def to_bytes(self) -> Generator[bytes, None, None]:
+        """Get raw unpacked pgcopy data."""
+
+        while chunk := self.fileobj.read(32768):
+            yield chunk
 
     def tell(self) -> int:
         """Return current position."""

@@ -9,6 +9,12 @@ from io import (
 from types import FunctionType
 from typing import Any
 
+from pandas import DataFrame as PdFrame
+from polars import (
+    DataFrame as PlFrame,
+    LazyFrame as LfFrame,
+)
+
 from .core.enums import (
     ArrayOidToOid,
     PGOid,
@@ -90,6 +96,12 @@ class PGCopyWriter:
 
         return [pgtype.name for pgtype in self.pgtypes]
 
+    def __validate_fileobj(self) -> None:
+        """Validate file object."""
+
+        if self.fileobj is None:
+            raise PGCopyRecordError("File not defined!")
+
     def write_row(
         self,
         dtype_values: list[Any] | tuple[Any],
@@ -119,12 +131,40 @@ class PGCopyWriter:
 
         return make_rows(self.write_row, dtype_values, self.num_columns)
 
+    def from_pandas(
+        self,
+        data_frame: PdFrame,
+    ) -> int:
+        """Convert pandas.DataFrame to PGCopy format."""
+
+        return self.from_rows(data_frame.itertuples(index=False))
+
+    def from_polars(
+        self,
+        data_frame: PlFrame | LfFrame,
+    ) -> int:
+        """Convert polars.DataFrame to PGCopy format."""
+
+        if data_frame.__class__ is LfFrame:
+            data_frame = data_frame.collect(engine="streaming")
+
+        return self.from_rows(data_frame.iter_rows())
+
+    def from_bytes(
+        self,
+        bytes_data: Iterable[bytes],
+    ) -> int:
+        """Write PGCopy bytes."""
+
+        self.__validate_fileobj()
+
+        for chunk in bytes_data:
+            self.fileobj.write(chunk)
+
     def write(self, dtype_values: list[Any]) -> None:
         """Write all rows into file."""
 
-        if self.fileobj is None:
-            raise PGCopyRecordError("File not defined!")
-
+        self.__validate_fileobj()
         self.pos = writer(
             self.fileobj,
             self.write_row,

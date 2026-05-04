@@ -58,4 +58,4 @@ __all__ = (
     "metadata_from_frame",
 )
 __author__ = "0xMihalich"
-__version__ = "0.3.3.dev7"
+__version__ = "0.4.0.dev0"

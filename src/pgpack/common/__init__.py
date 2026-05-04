@@ -7,7 +7,6 @@ from . import (
     sizes as Size,
     struct_formats as Fmt,
 )
-from .casts import pandas_astype
 from .detector import detect_oid
 from .metadata import (
     PGPackMeta,
@@ -31,7 +30,6 @@ __all__ = (
     "compile_pgtype",
     "detect_oid",
     "metadata_from_frame",
-    "pandas_astype",
     "pgpack_repr",
     "table_repr",
 )

@@ -48,7 +48,7 @@ with open(file="README.md", encoding="utf-8") as f:
 
 setup(
     name="pgpack",
-    version="0.3.3.dev7",
+    version="0.4.0.dev0",
     author="0xMihalich",
     author_email="bayanmobile87@gmail.com",
     description=(

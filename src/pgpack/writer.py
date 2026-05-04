@@ -193,7 +193,7 @@ class PGPackWriter:
         self.columns = self.metadata.columns
         self.pgtypes = self.metadata.pgtypes
         self.pgparam = self.metadata.pgparams
-        self._writer = PGCopyWriter(self.pgtypes)
+        self._writer = PGCopyWriter(self.metadata.pgcopy_metadata)
 
     def from_rows(
         self,

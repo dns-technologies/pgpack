@@ -1,5 +1,23 @@
 # Version History
 
+## 0.4.0.dev0
+
+* Developer release (not public to pip)
+* Add PGCopyReader.schema_overrides attribute
+* Add PGCopyReader.pandas_astype attribute
+* Add PGCopyReader.to_pandas() method
+* Add PGCopyReader.to_polars() method
+* Add PGCopyReader.to_bytes() method
+* Add PGCopyWriter.from_pandas() method
+* Add PGCopyWriter.from_polars() method
+* Add PGCopyWriter.from_bytes() method
+* Add PGCopyWriter.__validate_fileobj() method
+* Remove PGPackMeta.pandas_astype property method
+* Move casts.py into pgcopylib.core
+* Change PGPackReader._reader() initialization parameter from self.pgtypes to self.metadata.pgcopy_metadata
+* Change PGPackWriter._writer() initialization parameter from self.pgtypes to self.metadata.pgcopy_metadata
+* Code refactor
+
 ## 0.3.3.dev7
 
 * Developer release (not public to pip)

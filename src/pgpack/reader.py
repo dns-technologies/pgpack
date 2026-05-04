@@ -31,14 +31,11 @@ from .common import (
 from .pgcopylib import (
     PGCopyReader,
     PGOid,
+    PostgreSQLDtype,
+    PGOidToDType,
+    pandas_astype,
+    ISLAZY,
 )
-
-
-ISLAZY = {
-    False: PlFrame,
-    True: LfFrame,
-}
-
 
 class PGPackReader:
     """Class for read PGPack format."""
@@ -54,6 +51,7 @@ class PGPackReader:
     compression_stream: BufferedReader
     s3_file: bool
     schema_overrides: dict[str, Object]
+    pandas_astype: dict[str, str]
     _reader_pos: int
     _reader: PGCopyReader | None
 
@@ -82,6 +80,11 @@ class PGPackReader:
         self.columns = self.metadata.columns
         self.pgtypes = self.metadata.pgtypes
         self.pgparam = self.metadata.pgparams
+        self.postgres_dtype = [
+            PGOidToDType[self.pgtypes[column]]
+            if self.pgtypes else PostgreSQLDtype.Bytes
+            for column in range(self.num_columns)
+        ]
         (
             compression_method,
             self.compressed_length,
@@ -117,7 +120,7 @@ class PGPackReader:
         try:
             self._reader = PGCopyReader(
                 self.compression_stream,
-                self.pgtypes,
+                self.metadata.pgcopy_metadata,
             )
         except IndexError:
             self._reader = None
@@ -135,6 +138,7 @@ class PGPackReader:
                 PGOid._tsvector,
             )
         }
+        self.pandas_astype = pandas_astype(self.columns, self.postgres_dtype)
         self._str = None
 
     @property
@@ -175,7 +179,7 @@ class PGPackReader:
         return PdFrame(
             data=self.to_rows(),
             columns=self.columns,
-        ).astype(self.metadata.pandas_astype)
+        ).astype(self.pandas_astype)
 
     def to_polars(self, is_lazy: bool = False) -> PlFrame | LfFrame:
         """Convert to polars.DataFrame."""

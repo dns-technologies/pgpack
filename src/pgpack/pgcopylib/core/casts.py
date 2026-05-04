@@ -1,7 +1,7 @@
 from datetime import date
 from types import NoneType
 
-from ..pgcopylib.core.dtype import PostgreSQLDtype
+from .dtype import PostgreSQLDtype
 
 
 PANDAS_TYPE: dict[type, str] = {
