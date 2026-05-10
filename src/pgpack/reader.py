@@ -46,6 +46,7 @@ class PGPackReader:
     columns: list[str]
     pgtypes: list[PGOid]
     pgparam: list[PGParam]
+    postgres_dtype: list[PostgreSQLDtype]
     compressed_length: int
     data_length: int
     compression_method: CompressionMethod
@@ -118,14 +119,6 @@ class PGPackReader:
             self.fileobj.seek(self._reader_pos)
             self.fileobj = LimitedReader(self.fileobj, limit)
 
-        try:
-            self._reader = PGCopyReader(
-                self.compression_stream,
-                self.metadata.pgcopy_metadata,
-            )
-        except IndexError:
-            self._reader = None
-
         self.schema_overrides = {
             column: Object
             for column, pgtype in zip(self.columns, self.pgtypes)
@@ -141,6 +134,14 @@ class PGPackReader:
         }
         self.pandas_astype = pandas_astype(self.columns, self.postgres_dtype)
         self._str = None
+
+        try:
+            self._reader = PGCopyReader(
+                self.compression_stream,
+                self.metadata.pgcopy_metadata,
+            )
+        except IndexError:
+            self._reader = None
 
     @property
     def dtypes(self) -> list[str]:
